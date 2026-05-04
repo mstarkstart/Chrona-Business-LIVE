@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { LayoutDashboard, ListTodo, Calendar, Building2, ShieldCheck, Settings, User, LogOut, Layers } from "lucide-react";
+import { LayoutDashboard, ListTodo, Calendar, Building2, ShieldCheck, Settings, User, LogOut, BarChart3 } from "lucide-react";
 import { BusinessSwitcher } from "./BusinessSwitcher";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 
@@ -39,12 +39,12 @@ export async function SidebarA({
   ];
 
   return (
-    <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-border bg-card/60 backdrop-blur-xl">
+    <aside className="hidden md:flex w-64 shrink-0 flex-col border-r border-border bg-card">
       {/* Logo area */}
       <div className="px-4 py-4 border-b border-border">
         <div className="flex items-center gap-2.5 mb-4">
-          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/30">
-            <Layers className="h-3.5 w-3.5 text-white" />
+          <div className="h-7 w-7 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
+            <BarChart3 className="h-3.5 w-3.5 text-white" />
           </div>
           <span className="font-bold text-sm tracking-tight">
             Chrona <span className="gradient-text">Business</span>

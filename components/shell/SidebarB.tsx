@@ -15,7 +15,7 @@ export type SidebarBProps = {
 
 export function SidebarB(props: SidebarBProps) {
   return (
-    <aside className="hidden lg:flex w-72 shrink-0 flex-col border-l border-border bg-card/60 backdrop-blur-xl overflow-y-auto">
+    <aside className="hidden lg:flex w-72 shrink-0 flex-col border-l border-border bg-card overflow-y-auto">
 
       {/* Status */}
       <div className="p-4 border-b border-border">

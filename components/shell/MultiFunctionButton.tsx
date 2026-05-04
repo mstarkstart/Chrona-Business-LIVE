@@ -53,7 +53,7 @@ export function MultiFunctionButton({ actions }: { actions: string[] }) {
               const Icon = def.icon;
               const content = (
                 <div
-                  className="flex items-center gap-3 rounded-2xl border border-border bg-card/90 backdrop-blur-xl px-4 py-3 shadow-xl shadow-black/40 text-sm font-medium hover:bg-accent transition-all animate-fade-up"
+                  className="flex items-center gap-3 rounded-2xl border border-border bg-white px-4 py-3 shadow-lg shadow-gray-200 text-sm font-medium hover:bg-accent transition-all animate-fade-up"
                   style={{ animationDelay: `${i * 40}ms` }}
                   onClick={() => pick(key)}
                 >
@@ -93,7 +93,7 @@ export function MultiFunctionButton({ actions }: { actions: string[] }) {
 
       {/* Toast */}
       {toast && (
-        <div className="fixed top-20 right-4 z-50 rounded-xl border border-border bg-card/95 backdrop-blur-xl px-4 py-2.5 text-sm font-medium shadow-xl shadow-black/40 animate-fade-up">
+        <div className="fixed top-20 right-4 z-50 rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium shadow-lg shadow-gray-200 animate-fade-up">
           ✨ {toast}
         </div>
       )}

@@ -50,7 +50,7 @@ export function ActivityStatusPicker({
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl border border-border bg-popover/95 backdrop-blur-xl shadow-xl shadow-black/40 overflow-hidden">
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl border border-border bg-white shadow-xl shadow-gray-200 overflow-hidden">
           {ALL.map((s) => (
             <button
               key={s}
