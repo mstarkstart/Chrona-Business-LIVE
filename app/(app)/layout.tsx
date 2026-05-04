@@ -87,7 +87,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   const userName = [user.profile?.first_name, user.profile?.last_name].filter(Boolean).join(" ") || (user.email ?? "");
 
   return (
-    <div className="flex h-screen bg-background text-foreground">
+    <div className="flex h-screen bg-background text-foreground overflow-hidden">
       <SidebarA
         active={{ id: active.business.id, name: active.business.name }}
         options={memberships.map((m) => ({ id: m.business.id, name: m.business.name }))}
