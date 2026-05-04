@@ -13,9 +13,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chrona Work — AI-Powered Workplace Productivity",
+  title: "Chrona Business — Workforce Productivity Platform",
   description:
-    "Chrona Work helps companies assign tasks intelligently, manage team workload, and build schedules that actually work.",
+    "An all-in-one workforce platform that gives every role in a company exactly the tools, visibility, and access they need.",
 };
 
 export default function RootLayout({

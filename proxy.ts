@@ -1,82 +1,72 @@
 import { createServerClient } from "@supabase/ssr";
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse, type NextRequest } from "next/server";
 
-// Routes that require an active session
+// Auth-protected app surface (route groups don't appear in URL paths).
 const PROTECTED_PREFIXES = [
   "/dashboard",
   "/tasks",
-  "/planner",
-  "/team",
-  "/analytics",
-  "/assistant",
+  "/calendar",
+  "/organisation",
+  "/approvals",
   "/settings",
 ];
 
-// Routes that should redirect to /dashboard when already signed in
-const AUTH_PREFIXES = ["/sign-in", "/sign-up"];
+const AUTH_PAGES = new Set(["/login"]);
 
 export async function proxy(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({ request });
+  let response = NextResponse.next({ request });
 
-  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
+  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  const key = process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY;
 
-  // Skip auth checks when Supabase is not configured (offline / local dev without .env)
-  if (!supabaseUrl || !supabaseKey) {
-    return supabaseResponse;
-  }
+  // Skip auth checks when Supabase env is absent (early local dev).
+  if (!url || !key) return response;
 
-  const supabase = createServerClient(supabaseUrl, supabaseKey, {
+  const supabase = createServerClient(url, key, {
     cookies: {
-      getAll() {
-        return request.cookies.getAll();
-      },
-      setAll(cookiesToSet) {
-        // Apply cookie mutations to both the request (for downstream middleware)
-        // and the response (so the browser receives them).
+      getAll: () => request.cookies.getAll(),
+      setAll: (cookiesToSet) => {
         cookiesToSet.forEach(({ name, value }) =>
           request.cookies.set(name, value)
         );
-        supabaseResponse = NextResponse.next({ request });
+        response = NextResponse.next({ request });
         cookiesToSet.forEach(({ name, value, options }) =>
-          supabaseResponse.cookies.set(name, value, options)
+          response.cookies.set(name, value, options)
         );
       },
     },
   });
 
-  // IMPORTANT: Do not add any logic between createServerClient and getSession.
-  // A simple mistake here can cause hard-to-debug auth issues.
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
+  // IMPORTANT: do not insert logic between createServerClient and getUser.
+  const { data: { user } } = await supabase.auth.getUser();
 
-  const { pathname } = request.nextUrl;
+  const path = request.nextUrl.pathname;
+  const isProtected = PROTECTED_PREFIXES.some(
+    (p) => path === p || path.startsWith(p + "/")
+  );
+  const isAuthPage = AUTH_PAGES.has(path);
 
-  const isProtected = PROTECTED_PREFIXES.some((p) => pathname.startsWith(p));
-  const isAuthPath  = AUTH_PREFIXES.some((p) => pathname.startsWith(p));
-
-  if (!session && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/sign-in";
-    return NextResponse.redirect(url);
+  if (!user && isProtected) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/login";
+    dest.searchParams.set("next", path);
+    return NextResponse.redirect(dest);
   }
 
-  if (session && isAuthPath) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/dashboard";
-    return NextResponse.redirect(url);
+  if (user && isAuthPage) {
+    const dest = request.nextUrl.clone();
+    dest.pathname = "/dashboard";
+    dest.search = "";
+    return NextResponse.redirect(dest);
   }
 
-  return supabaseResponse;
+  return response;
 }
 
 export const config = {
   matcher: [
-    /*
-     * Match all request paths except static files, images, and the favicon.
-     */
-    "/((?!_next/static|_next/image|favicon\\.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
+    // Run on every path except Next internals, static assets, and auth/callback
+    // (which sets its own cookies and shouldn't be wrapped).
+    "/((?!_next/static|_next/image|favicon\\.ico|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

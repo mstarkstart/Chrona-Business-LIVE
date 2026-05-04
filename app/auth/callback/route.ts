@@ -1,26 +1,22 @@
+import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { NextResponse } from "next/server";
 
-/**
- * OAuth + magic-link callback handler.
- *
- * Supabase redirects here after Google OAuth or email confirmation.
- * We exchange the code for a session and redirect to the app.
- */
-export async function GET(request: Request) {
+// Magic-link / OAuth callback. Exchanges the `?code=` for a session cookie,
+// then redirects to `?next=` (or /dashboard).
+export async function GET(request: NextRequest) {
   const { searchParams, origin } = new URL(request.url);
   const code = searchParams.get("code");
-  // Allow the caller to specify a post-auth destination (defaults to /dashboard)
   const next = searchParams.get("next") ?? "/dashboard";
 
   if (code) {
     const supabase = await createSupabaseServerClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
-      return NextResponse.redirect(`${origin}${next}`);
+    if (error) {
+      return NextResponse.redirect(
+        `${origin}/login?error=${encodeURIComponent(error.message)}`
+      );
     }
   }
 
-  // Something went wrong — send the user back to sign-in with an error flag.
-  return NextResponse.redirect(`${origin}/sign-in?error=auth_callback_failed`);
+  return NextResponse.redirect(`${origin}${next}`);
 }

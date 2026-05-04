@@ -1,454 +1,226 @@
-"use client";
-
-import { useState, useMemo } from "react";
-import { AnimatePresence } from "framer-motion";
-import {
-  Plus,
-  Search,
-  ChevronDown,
-  Calendar,
-  MoreHorizontal,
-  AlertCircle,
-} from "lucide-react";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
+import { createSupabaseServerClient } from "@/lib/supabase/server";
+import { requireUser, requireActiveBusiness } from "@/lib/auth/session";
+import { can } from "@/lib/auth/permissions";
+import { recommendAssignee } from "@/lib/tasks/recommendations";
+import { availableWindows } from "@/lib/calendar/windows";
+import { createTask, setTaskStatus, approveTask, rejectTask, assignTask } from "@/lib/tasks/mutations";
+import { Card, CardTitle } from "@/components/dashboard/Cards";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select";
-import {
-  TaskStatusBadge,
-  getStatusIcon,
-  getStatusLabel,
-  getStatusIconClassName,
-} from "@/components/app/TaskStatusBadge";
-import { PriorityBadge, getPriorityDot } from "@/components/app/PriorityBadge";
-import { UserAvatar } from "@/components/app/UserAvatar";
-import { TaskDialog } from "@/components/app/TaskDialog";
-import { TaskDetailPanel } from "@/components/app/TaskDetailPanel";
-import { useTasks } from "@/lib/store-context";
-import {
-  type Task,
-  type TaskStatus,
-  type Priority,
-  type User,
-  type Project,
-} from "@/lib/mock-data";
-import { todayStr } from "@/lib/store";
 
-// ── Constants ──────────────────────────────────────────────────────────────────
-
-const STATUS_GROUPS: TaskStatus[] = ["not_started", "in_progress", "blocked", "done"];
-
-const PRIORITY_OPTIONS: { value: Priority | "all"; label: string }[] = [
-  { value: "all",      label: "All priorities" },
-  { value: "critical", label: "Critical" },
-  { value: "high",     label: "High" },
-  { value: "medium",   label: "Medium" },
-  { value: "low",      label: "Low" },
-];
-
-// ── TaskRow ────────────────────────────────────────────────────────────────────
-
-function TaskRow({
-  task,
-  selected,
-  onClick,
-  users,
-  projects,
-}: {
-  task: Task;
-  selected: boolean;
-  onClick: () => void;
-  users: User[];
-  projects: Project[];
-}) {
-  const owner   = users.find((u) => u.id === task.primaryOwnerId);
-  const project = projects.find((p) => p.id === task.projectId);
-  const today   = todayStr();
-  const overdue = task.dueDate && task.dueDate < today && task.status !== "done";
-  const progress =
-    task.estimatedHours > 0
-      ? Math.round((task.loggedHours / task.estimatedHours) * 100)
-      : 0;
-
-  return (
-    <tr
-      onClick={onClick}
-      className={`border-b border-border last:border-0 cursor-pointer transition-colors ${
-        selected ? "bg-indigo-50/60" : "hover:bg-muted/40"
-      }`}
-    >
-      {/* Priority dot */}
-      <td className="py-3 pl-4 pr-2 w-8">
-        <div className={`w-2 h-2 rounded-full ${getPriorityDot(task.priority)}`} />
-      </td>
-
-      {/* Title + tags */}
-      <td className="py-3 pr-4">
-        <div className="flex items-center gap-2 mb-1">
-          <TaskStatusBadge status={task.status} variant="icon" />
-          <span className="text-sm font-medium text-foreground truncate max-w-[220px]">
-            {task.title}
-          </span>
-          {overdue && (
-            <span title="Overdue">
-              <AlertCircle className="w-3.5 h-3.5 text-red-400 shrink-0" />
-            </span>
-          )}
-        </div>
-        <div className="flex items-center gap-1.5 ml-6">
-          {task.tags.slice(0, 2).map((tag) => (
-            <span
-              key={tag}
-              className="text-[10px] text-muted-foreground bg-muted px-1.5 py-0.5 rounded"
-            >
-              {tag}
-            </span>
-          ))}
-        </div>
-      </td>
-
-      {/* Project */}
-      <td className="py-3 pr-4 hidden md:table-cell">
-        <span className="text-xs text-muted-foreground">{project?.name ?? "—"}</span>
-      </td>
-
-      {/* Priority badge */}
-      <td className="py-3 pr-4 hidden lg:table-cell">
-        <PriorityBadge priority={task.priority} className="text-[10px]" />
-      </td>
-
-      {/* Due date */}
-      <td className="py-3 pr-4 hidden lg:table-cell">
-        <div
-          className={`flex items-center gap-1.5 text-xs ${
-            overdue ? "text-red-500 font-medium" : "text-muted-foreground"
-          }`}
-        >
-          <Calendar className="w-3.5 h-3.5" />
-          {task.dueDate || "—"}
-        </div>
-      </td>
-
-      {/* Progress */}
-      <td className="py-3 pr-4 hidden xl:table-cell">
-        <div className="flex items-center gap-2 w-28">
-          <Progress value={progress} className="flex-1" />
-          <span className="text-xs text-muted-foreground shrink-0">{progress}%</span>
-        </div>
-      </td>
-
-      {/* Owner */}
-      <td className="py-3 pr-4">
-        {owner && (
-          <UserAvatar initials={owner.initials} onlineStatus={owner.onlineStatus} size="sm" />
-        )}
-      </td>
-
-      {/* Menu */}
-      <td className="py-3 pr-3">
-        <button
-          onClick={(e) => e.stopPropagation()}
-          className="p-1 rounded hover:bg-muted transition-colors"
-        >
-          <MoreHorizontal className="w-4 h-4 text-muted-foreground" />
-        </button>
-      </td>
-    </tr>
-  );
+function priorityColor(p: string, due?: string | null) {
+  if (p === "urgent") return "#ef4444";
+  if (due && new Date(due) < new Date()) return "#ef4444";
+  if (p === "high") return "#f97316";
+  if (p === "normal") return "#eab308";
+  return "#22c55e";
 }
 
-// ── Page ───────────────────────────────────────────────────────────────────────
+function fmtDate(d: Date) {
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" }) +
+    " " +
+    d.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
 
-export default function TasksPage() {
-  const { visibleTasks: tasks, users, projects, loading } = useTasks();
+export default async function TasksPage() {
+  const user = await requireUser();
+  const active = await requireActiveBusiness();
+  const supabase = await createSupabaseServerClient();
 
-  const [selectedTaskId, setSelectedTaskId] = useState<string | null>(null);
-  const [createOpen, setCreateOpen]         = useState(false);
-  const [search, setSearch]                 = useState("");
-  const [filterStatus, setFilterStatus]     = useState<TaskStatus | "all">("all");
-  const [filterPriority, setFilterPriority] = useState<Priority | "all">("all");
-  const [filterOwner, setFilterOwner]       = useState<string>("all");
-  const [filterOverdue, setFilterOverdue]   = useState(false);
+  const isPrimary = ["employer", "c_suite", "manager", "team_lead"].includes(active.role);
 
-  const today = todayStr();
+  const { data: tasks } = await supabase
+    .from("tasks")
+    .select("*, assignee:profiles!tasks_assigned_to_profiles_fkey(first_name, last_name)")
+    .eq("business_id", active.business.id)
+    .order("priority", { ascending: false })
+    .order("due_date", { ascending: true });
 
-  // Live-lookup of selected task (so panel reflects latest store state)
-  const selectedTask = tasks.find((t) => t.id === selectedTaskId) ?? null;
+  const allTasks = tasks ?? [];
+  const myTasks = allTasks.filter((t) => t.assigned_to === user.id && t.status !== "completed");
+  const priorityTasks = allTasks.filter((t) => t.status !== "completed" && t.status !== "cancelled").slice(0, 3);
+  const awaiting = allTasks.filter((t) => t.status === "awaiting_approval");
+  const unassigned = allTasks.filter((t) => !t.assigned_to && t.status === "pending");
 
-  // Close panel if the selected task was deleted
-  const handleSelectTask = (task: Task) => {
-    setSelectedTaskId((prev) => (prev === task.id ? null : task.id));
+  const completedToday = allTasks.filter((t) => t.status === "completed" && t.completed_at && new Date(t.completed_at).toDateString() === new Date().toDateString()).length;
+  const remaining = allTasks.filter((t) => t.status !== "completed" && t.status !== "cancelled").length;
+
+  const windows = await availableWindows(active.business.id, user.id, 7);
+  const recommendation = isPrimary ? await recommendAssignee(active.business.id) : null;
+
+  // Member list for assignment dropdowns.
+  const { data: members } = await supabase
+    .from("business_members")
+    .select("user_id, profiles!business_members_user_id_profiles_fkey(first_name, last_name)")
+    .eq("business_id", active.business.id)
+    .eq("status", "active");
+
+  const nameOf = (uid: string | null | undefined) => {
+    if (!uid) return "Unassigned";
+    const m = members?.find((x) => x.user_id === uid);
+    const p = (m as unknown as { profiles?: { first_name?: string; last_name?: string } } | undefined)?.profiles;
+    return [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "Member";
   };
 
-  // Filtered + searched task list
-  const filtered = useMemo(() => {
-    return tasks.filter((t) => {
-      const project = projects.find((p) => p.id === t.projectId);
-
-      // Search
-      const matchSearch =
-        !search ||
-        t.title.toLowerCase().includes(search.toLowerCase()) ||
-        (project?.name ?? "").toLowerCase().includes(search.toLowerCase()) ||
-        t.tags.some((tag) => tag.toLowerCase().includes(search.toLowerCase()));
-
-      // Status
-      const matchStatus = filterStatus === "all" || t.status === filterStatus;
-
-      // Priority
-      const matchPriority = filterPriority === "all" || t.priority === filterPriority;
-
-      // Owner
-      const matchOwner = filterOwner === "all" || t.primaryOwnerId === filterOwner;
-
-      // Overdue
-      const isOverdue = t.dueDate && t.dueDate < today && t.status !== "done";
-      const matchOverdue = !filterOverdue || isOverdue;
-
-      return matchSearch && matchStatus && matchPriority && matchOwner && matchOverdue;
-    });
-  }, [tasks, search, filterStatus, filterPriority, filterOwner, filterOverdue, today]);
-
-  // Status tile counts (from full task list, not filtered)
-  const statusCounts = useMemo(
-    () =>
-      STATUS_GROUPS.reduce<Record<string, number>>((acc, s) => {
-        acc[s] = tasks.filter((t) => t.status === s).length;
-        return acc;
-      }, {}),
-    [tasks]
-  );
-
-  const overdueCount = useMemo(
-    () => tasks.filter((t) => t.dueDate && t.dueDate < today && t.status !== "done").length,
-    [tasks, today]
-  );
-
-  const hasFilters =
-    filterStatus !== "all" ||
-    filterPriority !== "all" ||
-    filterOwner !== "all" ||
-    filterOverdue ||
-    search !== "";
-
-  function clearFilters() {
-    setSearch("");
-    setFilterStatus("all");
-    setFilterPriority("all");
-    setFilterOwner("all");
-    setFilterOverdue(false);
-  }
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center h-[calc(100vh-88px)]">
-        <div className="text-sm text-muted-foreground">Loading tasks…</div>
-      </div>
-    );
-  }
-
   return (
-    <div className="flex gap-5 h-[calc(100vh-88px)] max-w-[1400px]">
+    <div className="p-6 space-y-6 max-w-6xl">
+      <header>
+        <h1 className="text-2xl font-semibold">Tasks</h1>
+        <p className="text-sm text-muted-foreground">{isPrimary ? "Primary view" : "My tasks"} · {active.business.name}</p>
+      </header>
 
-      {/* ── Main panel ───────────────────────────────────────────────── */}
-      <div className="flex-1 min-w-0 flex flex-col gap-4">
-
-        {/* Status summary tiles */}
-        <div className="grid grid-cols-4 gap-3">
-          {STATUS_GROUPS.map((s) => {
-            const Icon   = getStatusIcon(s);
-            const iconCls = getStatusIconClassName(s);
-            return (
-              <button
-                key={s}
-                onClick={() => setFilterStatus(filterStatus === s ? "all" : s)}
-                className={`flex items-center gap-2.5 p-3 rounded-xl border transition-all text-left ${
-                  filterStatus === s
-                    ? "border-indigo-300 bg-indigo-50 shadow-sm"
-                    : "border-border bg-card hover:bg-muted"
-                }`}
-              >
-                <Icon className={`w-4 h-4 ${iconCls}`} />
-                <div>
-                  <div className="text-xs font-bold text-foreground">{statusCounts[s] ?? 0}</div>
-                  <div className="text-[10px] text-muted-foreground">{getStatusLabel(s)}</div>
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {priorityTasks.map((t) => (
+          <Card key={t.id}>
+            <div className="flex items-start gap-2">
+              <span className="mt-1.5 h-2.5 w-2.5 rounded-full" style={{ background: priorityColor(t.priority, t.due_date) }} />
+              <div className="flex-1 min-w-0">
+                <div className="font-medium truncate">{t.title}</div>
+                <div className="text-xs text-muted-foreground mt-1">
+                  {t.due_date ? `Due ${fmtDate(new Date(t.due_date))}` : "No due date"}
                 </div>
-              </button>
-            );
-          })}
-        </div>
-
-        {/* Overdue callout */}
-        {overdueCount > 0 && (
-          <button
-            onClick={() => setFilterOverdue(!filterOverdue)}
-            className={`flex items-center gap-2 px-3 py-2 rounded-xl border text-xs font-medium transition-all w-fit ${
-              filterOverdue
-                ? "border-red-300 bg-red-50 text-red-600"
-                : "border-red-200 bg-red-50/60 text-red-500 hover:bg-red-50"
-            }`}
-          >
-            <AlertCircle className="w-3.5 h-3.5" />
-            {overdueCount} overdue task{overdueCount !== 1 ? "s" : ""}
-            {filterOverdue ? " — showing only overdue" : " — click to filter"}
-          </button>
-        )}
-
-        {/* Task table card */}
-        <Card className="flex-1 flex flex-col overflow-hidden">
-          <CardHeader className="pb-3 border-b border-border">
-            <div className="flex items-center gap-2 flex-wrap">
-              {/* Search */}
-              <div className="relative flex-1 min-w-[180px]">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-                <input
-                  value={search}
-                  onChange={(e) => setSearch(e.target.value)}
-                  placeholder="Search tasks, projects, tags…"
-                  className="w-full h-8 pl-9 pr-3 text-sm rounded-lg border border-border bg-muted focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-400 transition-colors"
-                />
+                <div className="text-xs text-muted-foreground capitalize">Priority: {t.priority}</div>
               </div>
-
-              {/* Priority filter */}
-              <Select
-                value={filterPriority}
-                onValueChange={(v) => setFilterPriority(v as Priority | "all")}
-              >
-                <SelectTrigger className="h-8 w-36 text-xs border-border">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PRIORITY_OPTIONS.map((p) => (
-                    <SelectItem key={p.value} value={p.value} className="text-xs">
-                      {p.label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Owner filter */}
-              <Select value={filterOwner} onValueChange={setFilterOwner}>
-                <SelectTrigger className="h-8 w-36 text-xs border-border">
-                  <SelectValue placeholder="All owners" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all" className="text-xs">All owners</SelectItem>
-                  {users.map((u: User) => (
-                    <SelectItem key={u.id} value={u.id} className="text-xs">
-                      <div className="flex items-center gap-1.5">
-                        <UserAvatar initials={u.initials} size="xs" />
-                        {u.name}
-                      </div>
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-
-              {/* Clear filters */}
-              {hasFilters && (
-                <button
-                  onClick={clearFilters}
-                  className="h-8 px-3 text-xs font-medium text-muted-foreground hover:text-foreground border border-border rounded-lg hover:bg-muted transition-colors"
-                >
-                  Clear
-                </button>
-              )}
-
-              <Button size="sm" className="ml-auto" onClick={() => setCreateOpen(true)}>
-                <Plus className="w-4 h-4" /> New task
-              </Button>
             </div>
-          </CardHeader>
-
-          <CardContent className="p-0 flex-1 overflow-y-auto">
-            <table className="w-full">
-              <thead className="sticky top-0 bg-muted/60 backdrop-blur-sm z-10">
-                <tr className="border-b border-border">
-                  <th className="py-2.5 pl-4 pr-2 w-8" />
-                  <th className="py-2.5 pr-4 text-left text-xs font-semibold text-muted-foreground">
-                    Task
-                  </th>
-                  <th className="py-2.5 pr-4 text-left text-xs font-semibold text-muted-foreground hidden md:table-cell">
-                    Project
-                  </th>
-                  <th className="py-2.5 pr-4 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">
-                    Priority
-                  </th>
-                  <th className="py-2.5 pr-4 text-left text-xs font-semibold text-muted-foreground hidden lg:table-cell">
-                    Due
-                  </th>
-                  <th className="py-2.5 pr-4 text-left text-xs font-semibold text-muted-foreground hidden xl:table-cell">
-                    Progress
-                  </th>
-                  <th className="py-2.5 pr-4 text-left text-xs font-semibold text-muted-foreground">
-                    Owner
-                  </th>
-                  <th className="py-2.5 pr-3 w-8" />
-                </tr>
-              </thead>
-              <tbody>
-                {filtered.map((task) => (
-                  <TaskRow
-                    key={task.id}
-                    task={task}
-                    selected={selectedTaskId === task.id}
-                    onClick={() => handleSelectTask(task)}
-                    users={users}
-                    projects={projects}
-                  />
-                ))}
-                {filtered.length === 0 && (
-                  <tr>
-                    <td colSpan={8} className="py-16 text-center text-sm text-muted-foreground">
-                      {hasFilters ? (
-                        <>
-                          No tasks match your filters.{" "}
-                          <button
-                            onClick={clearFilters}
-                            className="text-indigo-500 hover:underline"
-                          >
-                            Clear filters
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          No tasks yet.{" "}
-                          <button
-                            onClick={() => setCreateOpen(true)}
-                            className="text-indigo-500 hover:underline"
-                          >
-                            Create your first task
-                          </button>
-                        </>
-                      )}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </CardContent>
-        </Card>
+          </Card>
+        ))}
+        {priorityTasks.length === 0 && <Card><span className="text-sm text-muted-foreground italic">No active priority tasks.</span></Card>}
       </div>
 
-      {/* ── Detail panel ────────────────────────────────────────────── */}
-      <AnimatePresence>
-        {selectedTask && (
-          <TaskDetailPanel
-            key={selectedTask.id}
-            task={selectedTask}
-            onClose={() => setSelectedTaskId(null)}
-          />
-        )}
-      </AnimatePresence>
+      <Card>
+        <div className="flex justify-between items-center">
+          <div>
+            <CardTitle>Today</CardTitle>
+            <p className="text-sm mt-1">Completed: <strong>{completedToday}</strong> · Remaining: <strong>{remaining}</strong></p>
+          </div>
+        </div>
+      </Card>
 
-      {/* ── Create dialog ────────────────────────────────────────────── */}
-      <TaskDialog open={createOpen} onOpenChange={setCreateOpen} />
+      {!isPrimary && (
+        <Card>
+          <CardTitle>My tasks</CardTitle>
+          <ul className="mt-3 space-y-2">
+            {myTasks.length === 0 && <li className="text-sm text-muted-foreground italic">Nothing assigned.</li>}
+            {myTasks.map((t) => (
+              <li key={t.id} className="flex items-center justify-between rounded-lg border border-border p-3 text-sm">
+                <div>
+                  <div className="font-medium">{t.title}</div>
+                  <div className="text-xs text-muted-foreground capitalize">{t.priority} · {t.status.replace("_", " ")}</div>
+                </div>
+                <div className="flex gap-2">
+                  {t.status !== "in_progress" && (
+                    <form action={setTaskStatus}><input type="hidden" name="id" value={t.id} /><input type="hidden" name="status" value="in_progress" /><Button size="sm" variant="outline">Start</Button></form>
+                  )}
+                  <form action={setTaskStatus}><input type="hidden" name="id" value={t.id} /><input type="hidden" name="status" value="completed" /><Button size="sm">Done</Button></form>
+                </div>
+              </li>
+            ))}
+          </ul>
+        </Card>
+      )}
+
+      {isPrimary && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardTitle>Awaiting approval</CardTitle>
+            <ul className="mt-3 space-y-2">
+              {awaiting.length === 0 && <li className="text-sm text-muted-foreground italic">No pending approvals.</li>}
+              {awaiting.map((t) => (
+                <li key={t.id} className="flex items-center justify-between text-sm">
+                  <span>{t.title}</span>
+                  <div className="flex gap-1">
+                    <form action={approveTask}><input type="hidden" name="id" value={t.id} /><Button size="sm">Approve</Button></form>
+                    <form action={rejectTask}><input type="hidden" name="id" value={t.id} /><Button size="sm" variant="outline">Deny</Button></form>
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </Card>
+
+          <Card>
+            <CardTitle>Available windows (next 7 days)</CardTitle>
+            <ul className="mt-3 space-y-1 text-sm">
+              {windows.length === 0 && <li className="text-muted-foreground italic">No free windows found.</li>}
+              {windows.slice(0, 8).map((w, i) => (
+                <li key={i}>
+                  {fmtDate(w.start)} – {w.end.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      )}
+
+      {isPrimary && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <Card>
+            <CardTitle>Recommendations</CardTitle>
+            {recommendation ? (
+              <p className="mt-3 text-sm">Smart-assign suggests <strong>{recommendation.name}</strong> for the next unassigned task (lowest current load).</p>
+            ) : (
+              <p className="mt-3 text-sm text-muted-foreground italic">No active members yet.</p>
+            )}
+          </Card>
+
+          <Card>
+            <CardTitle>Assign manually</CardTitle>
+            <ul className="mt-3 space-y-2">
+              {unassigned.length === 0 && <li className="text-sm text-muted-foreground italic">All tasks have an assignee.</li>}
+              {unassigned.slice(0, 5).map((t) => (
+                <li key={t.id} className="flex items-center justify-between gap-2 text-sm">
+                  <span className="truncate">{t.title}</span>
+                  <form action={assignTask} className="flex items-center gap-1">
+                    <input type="hidden" name="id" value={t.id} />
+                    <select name="assigned_to" className="h-8 rounded-md border border-border bg-card px-2 text-xs">
+                      <option value="">Pick…</option>
+                      {(members ?? []).map((m) => (
+                        <option key={m.user_id} value={m.user_id}>{nameOf(m.user_id)}</option>
+                      ))}
+                    </select>
+                    <Button size="sm">Assign</Button>
+                  </form>
+                </li>
+              ))}
+            </ul>
+          </Card>
+        </div>
+      )}
+
+      {can(active.role, "task.create") && (
+        <Card>
+          <CardTitle>Create a task</CardTitle>
+          <form action={createTask} className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-3">
+            <div className="md:col-span-2"><Label>Title</Label><Input name="title" required /></div>
+            <div className="md:col-span-2"><Label>Description</Label><Input name="description" /></div>
+            <div>
+              <Label>Priority</Label>
+              <select name="priority" defaultValue="normal" className="flex h-10 w-full rounded-lg border border-border bg-card px-3 text-sm">
+                <option value="low">Low</option>
+                <option value="normal">Normal</option>
+                <option value="high">High</option>
+                <option value="urgent">Urgent</option>
+              </select>
+            </div>
+            <div>
+              <Label>Assignee</Label>
+              <select name="assigned_to" className="flex h-10 w-full rounded-lg border border-border bg-card px-3 text-sm">
+                <option value="">Unassigned</option>
+                {(members ?? []).map((m) => (
+                  <option key={m.user_id} value={m.user_id}>{nameOf(m.user_id)}</option>
+                ))}
+              </select>
+            </div>
+            <div><Label>Due date</Label><Input name="due_date" type="datetime-local" /></div>
+            <div><Label>Start</Label><Input name="start_at" type="datetime-local" /></div>
+            <div><Label>End</Label><Input name="end_at" type="datetime-local" /></div>
+            <div className="flex items-end gap-2">
+              <label className="text-sm flex items-center gap-2"><input type="checkbox" name="requires_approval" /> Requires approval</label>
+            </div>
+            <div className="md:col-span-2"><Button type="submit">Create task</Button></div>
+          </form>
+        </Card>
+      )}
     </div>
   );
 }
