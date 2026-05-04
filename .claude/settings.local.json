@@ -11,7 +11,9 @@
       "WebFetch(domain:github.com)",
       "Bash(gh api *)",
       "PowerShell(try { $r = Invoke-RestMethod \"https://api.github.com/repos/ruvnet/ruflo\"; \"stars=$\\($r.stargazers_count\\) pushed=$\\($r.pushed_at\\) lang=$\\($r.language\\) desc=$\\($r.description\\) archived=$\\($r.archived\\)\" } catch { \"ERR: $\\($_.Exception.Message\\) Status=$\\($_.Exception.Response.StatusCode.value__\\)\" })",
-      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000)"
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000)",
+      "Bash(cat)",
+      "Bash(bash /tmp/test_login.sh)"
     ]
   }
 }
