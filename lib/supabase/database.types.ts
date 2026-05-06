@@ -12,7 +12,8 @@ export type BusinessType = "self_employed" | "partnership" | "corporation";
 export type ContractType = "full_time" | "contract_3m" | "contract_6m" | "contract_12m" | "custom";
 export type MemberStatus = "invited" | "active" | "suspended" | "removed";
 export type TaskPriority = "low" | "normal" | "high" | "urgent";
-export type TaskStatus = "pending" | "in_progress" | "completed" | "cancelled" | "awaiting_approval";
+export type TaskStatus = "pending" | "in_progress" | "completed" | "cancelled" | "awaiting_approval" | "awaiting_acceptance";
+export type NotificationType = "task_assignment" | "task_accepted" | "task_declined" | "task_approved" | "task_rejected" | "approval_request";
 export type ActivityStatus =
   | "available" | "tasking" | "meeting" | "lunch_break" | "personal_time" | "training" | "offline";
 export type EventType = "meeting" | "task_block" | "break" | "lunch" | "training" | "focus" | "other";
@@ -83,6 +84,11 @@ export interface Database {
         event_type: EventType; start_at: TS; end_at: TS;
         task_id: UUID | null; external_provider: CalendarProvider | null;
         external_id: string | null; created_at: TS;
+      }>;
+      notifications: RowDef<{
+        id: UUID; business_id: UUID; user_id: UUID;
+        type: NotificationType; title: string; body: string | null;
+        task_id: UUID | null; read_at: TS | null; created_at: TS;
       }>;
       invitations: RowDef<{
         id: UUID; business_id: UUID; email: string; role: Role;

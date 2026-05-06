@@ -32,6 +32,8 @@ async function createEvent(formData: FormData) {
     end_at: String(formData.get("end_at")),
   });
   revalidatePath("/calendar");
+  revalidatePath("/calendar/week");
+  revalidatePath("/calendar/month");
 }
 
 export default async function CalendarPage() {

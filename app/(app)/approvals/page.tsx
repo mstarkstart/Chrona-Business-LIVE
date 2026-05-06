@@ -77,7 +77,14 @@ export default async function ApprovalsPage() {
             <p className="mt-2 text-sm">
               Requested by <strong>{[r?.first_name, r?.last_name].filter(Boolean).join(" ") || "Member"}</strong> · {new Date(p.created_at).toLocaleDateString()}
             </p>
-            <pre className="mt-2 rounded-md bg-muted p-3 text-xs overflow-x-auto">{JSON.stringify(p.payload, null, 2)}</pre>
+            <div className="mt-2 rounded-xl bg-muted/60 border border-border px-4 py-3 text-sm space-y-1">
+              {Object.entries(p.payload as Record<string, unknown>).map(([k, v]) => (
+                <div key={k} className="flex gap-2">
+                  <span className="text-muted-foreground capitalize min-w-[120px]">{k.replace(/_/g, " ")}:</span>
+                  <span className="font-medium">{String(v)}</span>
+                </div>
+              ))}
+            </div>
             <div className="mt-3 flex gap-2">
               <form action={decide}><input type="hidden" name="id" value={p.id} /><input type="hidden" name="decision" value="approved" /><Button>Approve</Button></form>
               <form action={decide}><input type="hidden" name="id" value={p.id} /><input type="hidden" name="decision" value="rejected" /><Button variant="outline">Reject</Button></form>

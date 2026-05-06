@@ -7,6 +7,7 @@ export type {
   MemberStatus,
   TaskPriority,
   TaskStatus,
+  NotificationType,
   ActivityStatus,
   EventType,
   ApprovalStatus,
