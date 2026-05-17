@@ -50,15 +50,16 @@ export async function proxy(request: NextRequest) {
     const dest = request.nextUrl.clone();
     dest.pathname = "/login";
     dest.searchParams.set("next", path);
-    return NextResponse.redirect(dest);
+    // Copy any refreshed session cookies so they aren't lost on redirect
+    const redirectRes = NextResponse.redirect(dest);
+    response.cookies.getAll().forEach((c) => redirectRes.cookies.set(c));
+    return redirectRes;
   }
 
-  if (user && isAuthPage) {
-    const dest = request.nextUrl.clone();
-    dest.pathname = "/dashboard";
-    dest.search = "";
-    return NextResponse.redirect(dest);
-  }
+  // Don't force-redirect authenticated users away from /login.
+  // The login page itself handles "already logged in" cases — this lets
+  // users switch accounts without getting stuck in a signup loop when
+  // their stored session belongs to an account with no business memberships.
 
   return response;
 }

@@ -1,41 +1,31 @@
-# See https://help.github.com/articles/ignoring-files/ for more about ignoring files.
-
-# dependencies
+# Dependencies — never commit these
 /node_modules
-/.pnp
-.pnp.*
-.yarn/*
-!.yarn/patches
-!.yarn/plugins
-!.yarn/releases
-!.yarn/versions
 
-# testing
-/coverage
-
-# next.js
+# Next.js build output — generated locally, not needed in git
 /.next/
 /out/
-
-# production
 /build
 
-# misc
+# Environment variables — contain secrets, never commit
+.env*
+
+# AI development tooling (ruflo / Claude Code) — local only
+.claude/
+.claude-flow/
+.swarm/
+.mcp.json
+ruvector.db
+
+# OS / editor junk
 .DS_Store
 *.pem
+*.tsbuildinfo
+next-env.d.ts
 
-# debug
+# Vercel deployment config
+.vercel
+
+# Debug logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
-.pnpm-debug.log*
-
-# env files (can opt-in for committing if needed)
-.env*
-
-# vercel
-.vercel
-
-# typescript
-*.tsbuildinfo
-next-env.d.ts

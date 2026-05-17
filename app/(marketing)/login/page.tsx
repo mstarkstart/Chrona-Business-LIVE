@@ -3,6 +3,13 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ArrowRight, BarChart3 } from "lucide-react";
 
+async function signOutAction() {
+  "use server";
+  const supabase = await createSupabaseServerClient();
+  await supabase.auth.signOut();
+  redirect("/login");
+}
+
 async function loginAction(formData: FormData) {
   "use server";
   const email    = String(formData.get("email") ?? "").trim();
@@ -23,6 +30,55 @@ export default async function LoginPage({
   searchParams: Promise<{ error?: string; next?: string }>;
 }) {
   const params = await searchParams;
+
+  // Check if user already has a valid session
+  const supabase = await createSupabaseServerClient();
+  const { data: { user } } = await supabase.auth.getUser();
+
+  if (user) {
+    // Check if they have active memberships
+    const { data: memberships } = await supabase
+      .from("business_members")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("status", "active")
+      .limit(1);
+
+    if (memberships && memberships.length > 0) {
+      // Valid session + memberships → send them where they wanted to go
+      redirect(params.next ?? "/dashboard");
+    }
+
+    // Session exists but no memberships (stale/wrong account) →
+    // show a banner so they can sign out and use the right account
+    return (
+      <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-6">
+        <div className="w-full max-w-md rounded-3xl border border-border bg-white px-8 py-10 shadow-xl text-center space-y-4">
+          <div className="flex justify-center">
+            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
+              <BarChart3 className="h-7 w-7 text-white" />
+            </div>
+          </div>
+          <h1 className="text-xl font-bold">Wrong account?</h1>
+          <p className="text-sm text-muted-foreground">
+            You&apos;re signed in as <strong>{user.email}</strong> but that account has no active business.
+            Sign out to log in with a different account.
+          </p>
+          <form action={signOutAction}>
+            <button
+              type="submit"
+              className="w-full h-12 rounded-xl bg-primary font-semibold text-white shadow-lg hover:scale-[1.01] active:scale-[0.99]"
+            >
+              Sign out &amp; switch account
+            </button>
+          </form>
+          <Link href="/signup" className="block text-sm text-indigo-600 hover:underline">
+            Or create a new business →
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-[calc(100vh-5rem)] bg-mesh relative flex items-center justify-center px-6 py-16 overflow-hidden">
