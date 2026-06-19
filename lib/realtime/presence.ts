@@ -2,7 +2,7 @@ import { supabase } from "@/lib/supabase/client";
 import type { ActivityStatus } from "@/lib/supabase/types";
 
 export type PresenceRow = {
-  business_member_id: string;
+  workspace_member_id: string;
   status: ActivityStatus;
   updated_at: string;
 };
@@ -11,8 +11,9 @@ export function subscribeActivity(
   businessId: string,
   onChange: (row: PresenceRow) => void
 ) {
+  const channelId = `presence:${businessId}:${Math.random().toString(36).substring(2)}`;
   const channel = supabase
-    .channel(`business:${businessId}:presence`)
+    .channel(channelId)
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "activity_status" },
@@ -43,4 +44,14 @@ export const STATUS_LABEL: Record<ActivityStatus, string> = {
   personal_time: "Personal Time",
   training:      "Training",
   offline:       "Offline",
+};
+
+export const STATUS_EMOJI: Record<ActivityStatus, string> = {
+  available:     "🟢",
+  tasking:       "⚡",
+  meeting:       "📅",
+  lunch_break:   "🍽️",
+  personal_time: "🔴",
+  training:      "📚",
+  offline:       "⚫",
 };

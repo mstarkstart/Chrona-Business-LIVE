@@ -5,6 +5,7 @@ export type {
   BusinessType,
   ContractType,
   MemberStatus,
+  UiMode,
   TaskPriority,
   TaskStatus,
   NotificationType,
@@ -12,6 +13,8 @@ export type {
   EventType,
   ApprovalStatus,
   CalendarProvider,
+  ProjectStatus,
+  ProjectTemplate,
 } from "./database.types";
 
 import type { Database } from "./database.types";

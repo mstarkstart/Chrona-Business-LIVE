@@ -16,11 +16,11 @@ export default function LandingPage() {
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-60 blur-3xl animate-blob"
-               style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)" }} />
+            style={{ background: "radial-gradient(circle, rgba(99,102,241,0.18) 0%, transparent 70%)" }} />
           <div className="absolute top-40 -right-32 w-[420px] h-[420px] rounded-full opacity-50 blur-3xl animate-blob"
-               style={{ background: "radial-gradient(circle, rgba(244,63,94,0.10) 0%, transparent 70%)", animationDelay: "3s" }} />
+            style={{ background: "radial-gradient(circle, rgba(244,63,94,0.10) 0%, transparent 70%)", animationDelay: "3s" }} />
           <div className="absolute -bottom-20 left-1/3 w-[360px] h-[360px] rounded-full opacity-50 blur-3xl animate-blob"
-               style={{ background: "radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)", animationDelay: "6s" }} />
+            style={{ background: "radial-gradient(circle, rgba(16,185,129,0.10) 0%, transparent 70%)", animationDelay: "6s" }} />
         </div>
 
         {/* Subtle grid */}
@@ -34,7 +34,7 @@ export default function LandingPage() {
               <Sparkles className="h-3 w-3" />
               <span>Now in v1</span>
               <span className="h-1 w-1 rounded-full bg-indigo-300" />
-              <span className="text-indigo-500">Built for real businesses</span>
+              <span className="text-indigo-500">Built for real workspaces</span>
             </div>
 
             {/* Headline */}
@@ -68,7 +68,7 @@ export default function LandingPage() {
             {/* Trust line */}
             <p className="animate-fade-up delay-400 mt-6 text-sm text-muted-foreground">
               <span className="text-emerald-600 font-semibold">✓</span> No credit card{"  "}·{"  "}
-              <span className="text-emerald-600 font-semibold">✓</span> 10-minute setup{"  "}·{"  "}
+              <span className="text-emerald-600 font-semibold">✓</span> Quick setup{"  "}·{"  "}
               <span className="text-emerald-600 font-semibold">✓</span> Cancel anytime
             </p>
 
@@ -125,10 +125,10 @@ export default function LandingPage() {
       <section className="relative py-20 px-6 border-y border-border bg-white/50">
         <div className="mx-auto max-w-5xl grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
-            { value: 5,    suffix: "",   label: "role tiers", color: "#4f46e5" },
-            { value: 100,  suffix: "%",  label: "real-time", color: "#10b981" },
-            { value: 27,   suffix: "+",  label: "screens",  color: "#f97316" },
-            { value: 0,    suffix: "",   label: "data leaks ever", color: "#f43f5e" },
+            { value: 5, suffix: "", label: "role tiers", color: "#4f46e5" },
+            { value: 100, suffix: "%", label: "real-time", color: "#10b981" },
+            { value: 27, suffix: "+", label: "screens", color: "#f97316" },
+            { value: 0, suffix: "", label: "data leaks ever", color: "#f43f5e" },
           ].map((s, i) => (
             <div key={i} className="text-center animate-fade-up" style={{ animationDelay: `${i * 80}ms` }}>
               <div className="text-5xl md:text-6xl font-bold tracking-tighter" style={{ color: s.color }}>
@@ -145,7 +145,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       <section className="py-32 px-6 bg-mesh relative overflow-hidden">
         <div className="absolute -top-40 right-0 w-[500px] h-[500px] rounded-full opacity-30 blur-3xl"
-             style={{ background: "radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)" }} />
+          style={{ background: "radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)" }} />
 
         <div className="relative mx-auto max-w-6xl">
           <div className="text-center mb-16">
@@ -201,7 +201,7 @@ export default function LandingPage() {
                   {[
                     { title: "Q3 roadmap proposal", color: "#ef4444", priority: "Urgent" },
                     { title: "Design system audit", color: "#f97316", priority: "High" },
-                    { title: "Customer demo prep",  color: "#10b981", priority: "Normal" },
+                    { title: "Customer demo prep", color: "#10b981", priority: "Normal" },
                   ].map((t) => (
                     <div key={t.title} className="flex items-center gap-3 rounded-xl bg-muted/40 px-4 py-3 group-hover:translate-x-1 transition-transform">
                       <div className="h-2 w-2 rounded-full" style={{ background: t.color }} />
@@ -239,13 +239,12 @@ export default function LandingPage() {
                     return (
                       <div
                         key={i}
-                        className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium ${
-                          isToday
-                            ? "bg-indigo-600 text-white shadow-md"
-                            : hasEvents
-                              ? heavy ? "bg-indigo-100 text-indigo-700" : "bg-indigo-50 text-indigo-600"
-                              : "text-muted-foreground"
-                        }`}
+                        className={`aspect-square rounded-md flex items-center justify-center text-[10px] font-medium ${isToday
+                          ? "bg-indigo-600 text-white shadow-md"
+                          : hasEvents
+                            ? heavy ? "bg-indigo-100 text-indigo-700" : "bg-indigo-50 text-indigo-600"
+                            : "text-muted-foreground"
+                          }`}
                       >
                         {((i + 1) % 30) || 30}
                       </div>
@@ -273,9 +272,9 @@ export default function LandingPage() {
                 </p>
                 <div className="space-y-2">
                   {[
-                    { name: "Olivia",  status: "Tasking",   color: "#eab308" },
-                    { name: "Marcus",  status: "Meeting",   color: "#f97316" },
-                    { name: "Sam",     status: "Available", color: "#10b981" },
+                    { name: "Olivia", status: "Tasking", color: "#eab308" },
+                    { name: "Marcus", status: "Meeting", color: "#f97316" },
+                    { name: "Sam", status: "Available", color: "#10b981" },
                   ].map((p) => (
                     <div key={p.name} className="flex items-center gap-2 text-sm">
                       <div className="relative h-2 w-2 shrink-0">
@@ -304,11 +303,11 @@ export default function LandingPage() {
                 </p>
                 <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
                   {[
-                    { label: "Auth",        ok: true },
-                    { label: "RLS",         ok: true },
-                    { label: "Realtime",    ok: true },
-                    { label: "Approvals",   ok: true },
-                    { label: "Audit log",   ok: true },
+                    { label: "Auth", ok: true },
+                    { label: "RLS", ok: true },
+                    { label: "Realtime", ok: true },
+                    { label: "Approvals", ok: true },
+                    { label: "Audit log", ok: true },
                     { label: "Multi-tenant", ok: true },
                   ].map((f) => (
                     <div key={f.label} className="flex items-center gap-2 rounded-lg bg-white border border-border px-3 py-2 text-xs font-semibold">
@@ -446,7 +445,7 @@ export default function LandingPage() {
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> 5 role tiers</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> Real-time updates</span>
                 <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> Bulletproof RLS</span>
-                <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> 10-min setup</span>
+                <span className="flex items-center gap-1.5"><CheckCircle2 className="h-4 w-4" /> Quick Setup</span>
               </div>
             </div>
           </div>
@@ -474,7 +473,7 @@ export default function LandingPage() {
               <h4 className="text-sm font-semibold mb-3">Product</h4>
               <ul className="space-y-2 text-sm text-muted-foreground">
                 <li><Link href="/signup" className="hover:text-foreground">Sign up</Link></li>
-                <li><Link href="/login"  className="hover:text-foreground">Log in</Link></li>
+                <li><Link href="/login" className="hover:text-foreground">Log in</Link></li>
               </ul>
             </div>
             <div>

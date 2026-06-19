@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
   const { userId, businessId, type, title, body, taskId } = await request.json();
 
   await supabaseAdmin.from("notifications").insert({
-    business_id: businessId,
+    workspace_id: businessId,
     user_id: userId,
     type,
     title,

@@ -9,6 +9,12 @@ const PROTECTED_PREFIXES = [
   "/organisation",
   "/approvals",
   "/settings",
+  "/docs",
+  "/inbox",
+  "/projects",
+  "/chat",
+  "/timesheets",
+  "/rewards",
 ];
 
 const AUTH_PAGES = new Set(["/login"]);

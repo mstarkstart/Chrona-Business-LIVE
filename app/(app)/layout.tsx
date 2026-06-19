@@ -1,18 +1,21 @@
 import { redirect } from "next/navigation";
-import { requireUser, listMyMemberships, getActiveBusiness } from "@/lib/auth/session";
+import { requireUser, listMyMemberships, getActiveWorkspace } from "@/lib/auth/session";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { SidebarA } from "@/components/shell/SidebarA";
 import { SidebarB } from "@/components/shell/SidebarB";
-import { NotificationBell } from "@/components/shell/NotificationBell";
+import { Topbar } from "@/components/shell/Topbar";
 import { MultiFunctionButton } from "@/components/shell/MultiFunctionButton";
 import type { ActivityStatus, Tables } from "@/lib/supabase/types";
+
+import { PageTransition } from "@/components/ui/PageTransition";
+import { ThemeProvider } from "@/components/ThemeProvider";
 
 export default async function AppLayout({ children }: { children: React.ReactNode }) {
   const user = await requireUser();
   const memberships = await listMyMemberships();
   if (memberships.length === 0) redirect("/signup");
 
-  const active = await getActiveBusiness();
+  const active = await getActiveWorkspace();
   if (!active) redirect("/signup");
 
   const supabase = await createSupabaseServerClient();
@@ -27,33 +30,37 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     { data: memberRows },
     { data: notifications },
   ] = await Promise.all([
-    supabase.from("approval_requests").select("id").eq("business_id", active.business.id).eq("status", "pending"),
-    supabase.from("activity_status").select("status").eq("business_member_id", active.member.id).maybeSingle(),
+    supabase.from("approval_requests").select("id").eq("workspace_id", active.workspace.id).eq("status", "pending"),
+    supabase.from("activity_status").select("status, updated_at").eq("workspace_member_id", active.member.id).maybeSingle(),
     supabase.from("tasks").select("id, title, status")
-      .eq("business_id", active.business.id).eq("assigned_to", user.id)
+      .eq("workspace_id", active.workspace.id).eq("assigned_to", user.id)
       .gte("due_date", new Date(new Date().setHours(0,0,0,0)).toISOString())
       .lt("due_date",  new Date(new Date().setHours(24,0,0,0)).toISOString())
       .neq("status", "completed"),
-    supabase.from("tasks").select("id, title").eq("business_id", active.business.id).eq("assigned_to", user.id).eq("status", "in_progress"),
-    supabase.from("tasks").select("id, title").eq("business_id", active.business.id).is("assigned_to", null).eq("status", "pending").limit(3),
+    supabase.from("tasks").select("id, title").eq("workspace_id", active.workspace.id).eq("assigned_to", user.id).eq("status", "in_progress"),
+    supabase.from("tasks").select("id, title").eq("workspace_id", active.workspace.id).is("assigned_to", null).eq("status", "pending").limit(3),
     supabase.from("activity_status")
-      .select("business_member_id, status, business_members!inner(business_id, user_id, profiles!business_members_user_id_profiles_fkey(first_name, last_name))")
-      .eq("business_members.business_id", active.business.id)
+      .select("workspace_member_id, status, updated_at, task_id, tasks(title), workspace_members!inner(workspace_id, user_id, status, profiles!workspace_members_user_id_profiles_fkey(first_name, last_name, avatar_url))")
+      .eq("workspace_members.workspace_id", active.workspace.id)
+      .eq("workspace_members.status", "active")
       .limit(50),
-    supabase.from("business_members")
-      .select("id, user_id, profiles!business_members_user_id_profiles_fkey(first_name, last_name)")
-      .eq("business_id", active.business.id)
+    supabase.from("workspace_members")
+      .select("id, user_id, profiles!workspace_members_user_id_profiles_fkey(first_name, last_name)")
+      .eq("workspace_id", active.workspace.id)
       .eq("status", "active"),
     supabase.from("notifications").select("*").eq("user_id", user.id).order("created_at", { ascending: false }).limit(30),
   ]);
 
   const initialPresence = (presence ?? []).map((p) => {
-    const member = (p as unknown as { business_members?: { profiles?: { first_name?: string; last_name?: string } } }).business_members;
-    const profile = member?.profiles;
+    const raw = p as unknown as { workspace_members?: { profiles?: { first_name?: string; last_name?: string; avatar_url?: string } }; tasks?: { title?: string } | null };
+    const profile = raw.workspace_members?.profiles;
     return {
-      business_member_id: p.business_member_id,
+      workspace_member_id: p.workspace_member_id,
       user_name: [profile?.first_name, profile?.last_name].filter(Boolean).join(" ") || "Member",
+      avatar_url: profile?.avatar_url ?? null,
       status: p.status as ActivityStatus,
+      updated_at: (p as any).updated_at ?? new Date().toISOString(),
+      task_title: raw.tasks?.title ?? null,
     };
   });
 
@@ -72,41 +79,58 @@ export default async function AppLayout({ children }: { children: React.ReactNod
     .from("multi_function_button_config")
     .select("actions")
     .eq("user_id", user.id)
-    .eq("business_id", active.business.id)
+    .eq("workspace_id", active.workspace.id)
     .maybeSingle();
   const mfbActions = Array.isArray(mfb?.actions) ? (mfb.actions as string[]) : [];
 
   return (
-    <div className="flex h-screen bg-background text-foreground overflow-hidden relative">
+    <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+      <div className="flex h-screen bg-mesh text-foreground overflow-hidden relative theme-app">
+      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 blur-[120px] animate-blob" />
+        <div className="absolute top-[20%] right-[-10%] w-[30%] h-[50%] rounded-full bg-purple-500/10 blur-[100px] animate-blob delay-200" />
+        <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 blur-[120px] animate-blob delay-400" />
+      </div>
       <SidebarA
-        active={{ id: active.business.id, name: active.business.name }}
-        options={memberships.map((m) => ({ id: m.business.id, name: m.business.name }))}
+        active={{ id: active.workspace.id, name: active.workspace.name, logoUrl: (active.workspace as any).logo_url ?? null }}
+        options={memberships.map((m) => ({ id: m.workspace.id, name: m.workspace.name, logoUrl: (m.workspace as any).logo_url ?? null }))}
         pendingApprovals={approvals?.length ?? 0}
         userName={userName}
+        avatarUrl={(user.profile as any)?.avatar_url}
+        userRole={active.role}
+        myStatus={(myStatusRow?.status ?? "available") as ActivityStatus}
+        myMemberId={active.member.id}
       />
 
-      <main className="flex-1 overflow-y-auto">
-        {/* Topbar: notification bell only (+ button is the floating FAB) */}
-        <div className="sticky top-0 z-30 flex justify-end items-center px-4 py-2 border-b border-border bg-background/80 backdrop-blur-sm">
-          <NotificationBell
-            userId={user.id}
-            initial={(notifications ?? []) as Tables<"notifications">[]}
-          />
+      <main className="flex-1 flex flex-col h-full overflow-hidden relative">
+        <Topbar
+          userId={user.id}
+          userName={userName}
+          initialNotifications={(notifications ?? []) as Tables<"notifications">[]}
+          workspaceId={active.workspace.id}
+          workspaceName={active.workspace.name}
+          avatarUrl={(user.profile as any)?.avatar_url}
+        />
+        <div className="flex-1 overflow-y-auto relative pb-16">
+          <PageTransition>{children}</PageTransition>
         </div>
-        <MultiFunctionButton actions={mfbActions} />
-        {children}
+        <MultiFunctionButton actions={mfbActions} workspaceId={active.workspace.id} />
       </main>
 
       <SidebarB
-        businessId={active.business.id}
+        businessId={active.workspace.id}
         myMemberId={active.member.id}
         myStatus={(myStatusRow?.status ?? "available") as ActivityStatus}
+        myStatusUpdatedAt={(myStatusRow as any)?.updated_at ?? null}
         myTasksToday={tasksToday ?? []}
         suggestedTasks={suggested ?? []}
         inProgressTasks={inProgress ?? []}
         initialPresence={initialPresence}
         members={members}
+        avatarUrl={(user.profile as any)?.avatar_url ?? null}
+        userName={userName}
       />
     </div>
+    </ThemeProvider>
   );
 }

@@ -1,19 +1,19 @@
 import type { Role } from "@/lib/supabase/types";
 
 export const ROLE_RANK: Record<Role, number> = {
-  employer: 5,
-  c_suite: 4,
+  owner: 5,
+  admin: 4,
   manager: 3,
-  team_lead: 2,
-  employee: 1,
+  member: 2,
+  guest: 1,
 };
 
 export const ROLE_LABEL: Record<Role, string> = {
-  employer: "Employer",
-  c_suite: "C-Suite",
+  owner: "Owner",
+  admin: "Admin",
   manager: "Manager",
-  team_lead: "Team Lead",
-  employee: "Employee",
+  member: "Member",
+  guest: "Guest",
 };
 
 export function isAtOrAbove(role: Role, min: Role): boolean {

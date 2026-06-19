@@ -1,4 +1,4 @@
-// Removes auth users that don't have any business_members rows — these are
+// Removes auth users that don't have any workspace_members rows — these are
 // "ghost" accounts left behind by half-finished signups. Running this lets a
 // stuck user retry signup with the same email.
 //
@@ -26,7 +26,7 @@ const sb = createClient(
     if (u.email.endsWith(".test")) continue;
 
     const { data: memberships } = await sb
-      .from("business_members")
+      .from("workspace_members")
       .select("id")
       .eq("user_id", u.id);
 

@@ -1,13 +1,13 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { requireUser, requireActiveBusiness } from "@/lib/auth/session";
+import { requireUser, requireActiveWorkspace } from "@/lib/auth/session";
 import { Card, CardTitle } from "@/components/dashboard/Cards";
 import { Button } from "@/components/ui/button";
 
 async function decide(formData: FormData) {
   "use server";
   const user = await requireUser();
-  const active = await requireActiveBusiness();
+  const active = await requireActiveWorkspace();
   const id = String(formData.get("id"));
   const decision = String(formData.get("decision")) as "approved" | "rejected";
 
@@ -16,7 +16,7 @@ async function decide(formData: FormData) {
     .from("approval_requests")
     .select("*")
     .eq("id", id)
-    .eq("business_id", active.business.id)
+    .eq("workspace_id", active.workspace.id)
     .maybeSingle();
   if (!req) return;
 
@@ -31,7 +31,7 @@ async function decide(formData: FormData) {
       const payload = req.payload as { name?: string };
       if (payload.name) {
         await supabase.from("departments").insert({
-          business_id: active.business.id,
+          workspace_id: active.workspace.id,
           name: payload.name,
         });
       }
@@ -41,9 +41,9 @@ async function decide(formData: FormData) {
         await supabase.from("teams").delete().eq("id", payload.team_id);
       }
     } else if (req.action_type === "modify_member_role") {
-      const payload = req.payload as { member_id?: string; role?: "employer" | "c_suite" | "manager" | "team_lead" | "employee" };
+      const payload = req.payload as { member_id?: string; role?: "owner" | "admin" | "manager" | "manager" | "member" };
       if (payload.member_id && payload.role) {
-        await supabase.from("business_members").update({ role: payload.role }).eq("id", payload.member_id);
+        await supabase.from("workspace_members").update({ role: payload.role }).eq("id", payload.member_id);
       }
     }
   }
@@ -52,12 +52,12 @@ async function decide(formData: FormData) {
 }
 
 export default async function ApprovalsPage() {
-  const active = await requireActiveBusiness();
+  const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
   const { data: pending } = await supabase
     .from("approval_requests")
     .select("*, requester:profiles!approval_requests_requested_by_profiles_fkey(first_name, last_name)")
-    .eq("business_id", active.business.id)
+    .eq("workspace_id", active.workspace.id)
     .eq("status", "pending")
     .order("created_at", { ascending: false });
 

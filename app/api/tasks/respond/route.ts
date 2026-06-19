@@ -2,6 +2,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { supabaseAdmin } from "@/lib/supabase/admin";
+import { syncTaskCalendarEvent } from "@/lib/tasks/mutations";
 
 export async function POST(request: NextRequest) {
   const supabase = await createSupabaseServerClient();
@@ -14,7 +15,7 @@ export async function POST(request: NextRequest) {
   // Verify the task is actually assigned to this user
   const { data: task } = await supabaseAdmin
     .from("tasks")
-    .select("id, business_id, title, created_by, status, assigned_to")
+    .select("id, workspace_id, title, created_by, status, assigned_to")
     .eq("id", taskId)
     .maybeSingle();
 
@@ -30,7 +31,7 @@ export async function POST(request: NextRequest) {
 
     // Notify the assigner
     await supabaseAdmin.from("notifications").insert({
-      business_id: task.business_id,
+      workspace_id: task.workspace_id,
       user_id: task.created_by,
       type: "task_accepted",
       title: `Task accepted: ${task.title}`,
@@ -45,7 +46,7 @@ export async function POST(request: NextRequest) {
       .eq("id", taskId);
 
     await supabaseAdmin.from("notifications").insert({
-      business_id: task.business_id,
+      workspace_id: task.workspace_id,
       user_id: task.created_by,
       type: "task_declined",
       title: `Task declined: ${task.title}`,
@@ -53,6 +54,9 @@ export async function POST(request: NextRequest) {
       task_id: taskId,
     });
   }
+
+  // Synchronize the task's calendar event
+  await syncTaskCalendarEvent(taskId);
 
   // Mark notification read
   if (notificationId) {

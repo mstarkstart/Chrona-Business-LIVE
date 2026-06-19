@@ -1,9 +1,10 @@
 import "server-only";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { Tables } from "@/lib/supabase/types";
+import { sendInvitationEmail } from "@/lib/email/send";
 
 export type InvitationLookup =
-  | { ok: true; invitation: Tables<"invitations">; business: Tables<"businesses"> }
+  | { ok: true; invitation: Tables<"invitations">; workspace: Tables<"workspaces"> }
   | { ok: false; reason: "not_found" | "expired" | "accepted" };
 
 export async function lookupInvitation(token: string): Promise<InvitationLookup> {
@@ -17,14 +18,14 @@ export async function lookupInvitation(token: string): Promise<InvitationLookup>
   if (inv.accepted_at) return { ok: false, reason: "accepted" };
   if (new Date(inv.expires_at) < new Date()) return { ok: false, reason: "expired" };
 
-  const { data: business } = await supabaseAdmin
-    .from("businesses")
+  const { data: workspace } = await supabaseAdmin
+    .from("workspaces")
     .select("*")
-    .eq("id", inv.business_id)
+    .eq("id", inv.workspace_id)
     .single();
-  if (!business) return { ok: false, reason: "not_found" };
+  if (!workspace) return { ok: false, reason: "not_found" };
 
-  return { ok: true, invitation: inv, business };
+  return { ok: true, invitation: inv, workspace };
 }
 
 export async function acceptInvitation(
@@ -65,9 +66,9 @@ export async function acceptInvitation(
 
   // Create membership.
   const { data: member } = await supabaseAdmin
-    .from("business_members")
+    .from("workspace_members")
     .insert({
-      business_id: lookup.invitation.business_id,
+      workspace_id: lookup.invitation.workspace_id,
       user_id: userId,
       role: lookup.invitation.role,
       department_id: lookup.invitation.department_id,
@@ -83,15 +84,15 @@ export async function acceptInvitation(
 
   if (member) {
     await supabaseAdmin.from("activity_status").upsert({
-      business_member_id: member.id,
+      workspace_member_id: member.id,
       status: "available",
     });
   }
 
   // If invited as employer (i.e. partnership partner), record them in partners too.
-  if (lookup.invitation.role === "employer" && lookup.business.business_type === "partnership") {
+  if (lookup.invitation.role === "owner" && lookup.workspace.business_type === "partnership") {
     await supabaseAdmin.from("partners").insert({
-      business_id: lookup.invitation.business_id,
+      workspace_id: lookup.invitation.workspace_id,
       user_id: userId,
     });
   }
@@ -101,5 +102,24 @@ export async function acceptInvitation(
     .update({ accepted_at: new Date().toISOString() })
     .eq("id", lookup.invitation.id);
 
-  return { businessId: lookup.invitation.business_id, userId };
+  // Send a welcome email to the new member after they accept.
+  const { data: profile } = await supabaseAdmin
+    .from("profiles")
+    .select("first_name, last_name, personal_email")
+    .eq("id", userId)
+    .maybeSingle();
+
+  const memberEmail = profile?.personal_email ?? lookup.invitation.email;
+
+  // Re-use sendInvitationEmail as a welcome confirmation — the token is already
+  // consumed, but this doubles as a "you're now in" notification email.
+  await sendInvitationEmail({
+    to: memberEmail,
+    workspaceName: lookup.workspace.name,
+    inviterName: "Chrona",
+    inviteToken: lookup.invitation.token, // token is spent — URL leads to "already accepted" page
+    role: lookup.invitation.role,
+  }).catch((e) => console.error("[email] welcome email failed:", e));
+
+  return { businessId: lookup.invitation.workspace_id, userId };
 }

@@ -177,8 +177,8 @@ export function NotificationBell({
                     </div>
 
                     <div className="flex items-center gap-1 shrink-0">
-                      {/* Mark as read (for non-task_assignment unread) */}
-                      {!n.read_at && n.type !== "task_assignment" && (
+                      {/* Mark as read (for non-task_assignment unread, or task_assignment without task_id) */}
+                      {!n.read_at && (n.type !== "task_assignment" || !n.task_id) && (
                         <button
                           onClick={() => markRead(n.id)}
                           title="Mark as read"

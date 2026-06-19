@@ -1,36 +1,112 @@
 "use client";
 
-import { useState, useTransition } from "react";
-import { Plus, X } from "lucide-react";
+import { useState, useTransition, useEffect } from "react";
+import { Plus, X, Calendar, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
+import { syncTaskCalendarEventAction } from "@/lib/tasks/mutations";
 
 type Member = { id: string; name: string; userId: string };
+
+const PRIORITY_DOT: Record<string, string> = {
+  low:    "bg-zinc-400",
+  normal: "bg-indigo-500",
+  high:   "bg-orange-500",
+  urgent: "bg-red-500",
+};
+
+const PRIORITY_OPTIONS = [
+  { value: "low",    label: "🔵  Low"    },
+  { value: "normal", label: "🟢  Normal" },
+  { value: "high",   label: "🟠  High"   },
+  { value: "urgent", label: "🔴  Urgent" },
+];
+
+function DateInput({ name, label }: { name: string; label: string }) {
+  return (
+    <div>
+      <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-1.5">
+        <Calendar className="h-3 w-3" />
+        {label}
+      </label>
+      <div className="flex gap-1.5 mt-1.5">
+        <input
+          name={`${name}_date`}
+          type="date"
+          className="flex-1 min-w-0 h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm text-foreground
+                     focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                     focus:bg-white transition-all duration-200 cursor-pointer"
+        />
+        <div className="relative flex-none">
+          <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground/50 pointer-events-none" />
+          <input
+            name={`${name}_time`}
+            type="time"
+            className="w-[130px] h-10 rounded-xl border border-border bg-muted/40 pl-9 pr-3 text-sm text-foreground
+                       focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                       focus:bg-white transition-all duration-200 cursor-pointer"
+          />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export function CreateTaskButton({
   members,
   businessId,
   label,
+  role = "member",
 }: {
   members: Member[];
   businessId: string;
   label?: string;
+  role?: string;
 }) {
   const [open, setOpen] = useState(false);
   const [pending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [priority, setPriority] = useState("normal");
+  const [currentUserId, setCurrentUserId] = useState<string | null>(null);
   const router = useRouter();
+
+  useEffect(() => {
+    supabase.auth.getUser().then(({ data }) => {
+      if (data.user) {
+        setCurrentUserId(data.user.id);
+      }
+    });
+  }, []);
+
+  const canSetPriority = ["manager", "admin", "owner"].includes(role);
+  const canAssign = ["manager", "admin", "owner"].includes(role);
+  const sortedMembers = [...members].sort((a, b) => a.name.localeCompare(b.name));
+  const filteredMembers = canAssign
+    ? sortedMembers
+    : sortedMembers.filter((m) => m.userId === currentUserId);
+
+  function handleClose() {
+    setOpen(false);
+    setError(null);
+    setPriority("normal");
+  }
 
   async function handleSubmit(e: React.FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
     const title       = String(fd.get("title") ?? "").trim();
     const description = String(fd.get("description") ?? "").trim();
-    const priority    = String(fd.get("priority") ?? "normal");
     const assigned_to = String(fd.get("assigned_to") ?? "") || null;
-    const due_date    = String(fd.get("due_date") ?? "") || null;
-    const start_at    = String(fd.get("start_at") ?? "") || null;
     const requires_approval = fd.get("requires_approval") === "on";
+
+    // Combine split date + time fields
+    const startDate = String(fd.get("start_at_date") ?? "");
+    const startTime = String(fd.get("start_at_time") ?? "");
+    const dueDate   = String(fd.get("due_date_date") ?? "");
+    const dueTime   = String(fd.get("due_date_time") ?? "");
+
+    const start_at = startDate ? `${startDate}T${startTime || "00:00"}` : null;
+    const due_date = dueDate   ? `${dueDate}T${dueTime || "00:00"}`     : null;
 
     if (!title) { setError("Title is required."); return; }
 
@@ -42,10 +118,10 @@ export function CreateTaskButton({
       const newStatus = assigned_to ? "awaiting_acceptance" : "pending";
 
       const { data: task, error: err } = await supabase.from("tasks").insert({
-        business_id: businessId,
+        workspace_id: businessId,
         title,
         description: description || null,
-        priority: priority as "low" | "normal" | "high" | "urgent",
+        priority: "normal", // Forced default to Normal
         status: newStatus,
         assigned_to,
         due_date,
@@ -56,9 +132,11 @@ export function CreateTaskButton({
 
       if (err) { setError(err.message); return; }
 
-      // If assigned, create a notification for the assignee via service action
+      if (task) {
+        await syncTaskCalendarEventAction(task.id);
+      }
+
       if (assigned_to && task) {
-        // Call the server-side notification creation
         await fetch("/api/notifications/create", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -73,18 +151,17 @@ export function CreateTaskButton({
         });
       }
 
-      setOpen(false);
+      handleClose();
       router.refresh();
     });
   }
 
   return (
     <>
-      {/* Trigger — small icon when no label, full button when label provided */}
       {label ? (
         <button
           onClick={() => setOpen(true)}
-          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md glow-sm hover:brightness-110 active:scale-[0.98] transition-all"
+          className="inline-flex items-center gap-2 rounded-xl bg-primary px-4 py-2.5 text-sm font-semibold text-white shadow-md hover:brightness-110 active:scale-[0.98] transition-all"
         >
           <Plus className="h-4 w-4" />
           {label}
@@ -99,14 +176,12 @@ export function CreateTaskButton({
         </button>
       )}
 
-      {/* Modal backdrop */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/20 backdrop-blur-sm" onClick={() => setOpen(false)} />
+          <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" onClick={handleClose} />
 
-          {/* Dialog — same animation as MFB fan-out */}
-          <div className="relative w-full max-w-lg animate-fade-up rounded-3xl bg-white border border-border shadow-2xl shadow-indigo-100 overflow-hidden">
-            {/* Gradient top strip */}
+          <div className="relative w-full max-w-lg animate-fade-up rounded-3xl bg-white border border-border shadow-2xl shadow-indigo-100/80 overflow-hidden">
+            {/* Top accent */}
             <div className="h-1 w-full bg-gradient-to-r from-indigo-500 to-violet-500" />
 
             {/* Header */}
@@ -114,12 +189,12 @@ export function CreateTaskButton({
               <div>
                 <h2 className="text-lg font-bold tracking-tight">Create task</h2>
                 <p className="text-xs text-muted-foreground mt-0.5">
-                  If you assign it, the employee will need to accept.
+                  Assign it and the employee will need to accept.
                 </p>
               </div>
               <button
-                onClick={() => setOpen(false)}
-                className="h-8 w-8 rounded-full hover:bg-accent flex items-center justify-center text-muted-foreground"
+                onClick={handleClose}
+                className="h-8 w-8 rounded-full hover:bg-accent flex items-center justify-center text-muted-foreground transition-colors"
               >
                 <X className="h-4 w-4" />
               </button>
@@ -127,6 +202,7 @@ export function CreateTaskButton({
 
             {/* Form */}
             <form onSubmit={handleSubmit} className="px-6 py-5 space-y-4">
+              {/* Title */}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Title *
@@ -135,10 +211,13 @@ export function CreateTaskButton({
                   name="title"
                   required
                   placeholder="What needs to get done?"
-                  className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm focus:border-indigo-500/50 focus:bg-white transition-colors"
+                  className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                             focus:bg-white transition-all duration-200"
                 />
               </div>
 
+              {/* Description */}
               <div>
                 <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
                   Description
@@ -146,70 +225,47 @@ export function CreateTaskButton({
                 <textarea
                   name="description"
                   placeholder="Optional details…"
-                  rows={3}
-                  className="mt-1.5 w-full rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-sm resize-none focus:border-indigo-500/50 focus:bg-white transition-colors"
+                  rows={2}
+                  className="mt-1.5 w-full rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-sm resize-none
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                             focus:bg-white transition-all duration-200"
                 />
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Priority
-                  </label>
-                  <select
-                    name="priority"
-                    defaultValue="normal"
-                    className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm"
-                  >
-                    <option value="low">Low</option>
-                    <option value="normal">Normal</option>
-                    <option value="high">High</option>
-                    <option value="urgent">Urgent</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Assign to
-                  </label>
-                  <select
-                    name="assigned_to"
-                    className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm"
-                  >
-                    <option value="">Unassigned</option>
-                    {members.map((m) => (
-                      <option key={m.userId} value={m.userId}>{m.name}</option>
-                    ))}
-                  </select>
-                </div>
+              {/* Assign row */}
+              <div>
+                <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  Assign to
+                </label>
+                <select
+                  name="assigned_to"
+                  className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm
+                             focus:outline-none focus:ring-2 focus:ring-indigo-500/30 focus:border-indigo-400
+                             focus:bg-white transition-all duration-200 cursor-pointer"
+                >
+                  <option value="">Unassigned</option>
+                  {filteredMembers.map((m) => (
+                    <option key={m.userId} value={m.userId}>{m.name}</option>
+                  ))}
+                </select>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Due date
-                  </label>
-                  <input
-                    name="due_date"
-                    type="datetime-local"
-                    className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm"
-                  />
-                </div>
-                <div>
-                  <label className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                    Start
-                  </label>
-                  <input
-                    name="start_at"
-                    type="datetime-local"
-                    className="mt-1.5 w-full h-10 rounded-xl border border-border bg-muted/40 px-3 text-sm"
-                  />
-                </div>
+              {/* Dates — split date + time pickers */}
+              <div className="space-y-4">
+                <DateInput name="start_at" label="Start date" />
+                <DateInput name="due_date" label="Due date" />
               </div>
 
-              <label className="flex items-center gap-2 text-sm cursor-pointer select-none">
-                <input type="checkbox" name="requires_approval" className="rounded" />
-                <span>Requires approval before starting</span>
+              {/* Requires approval */}
+              <label className="flex items-center gap-2.5 text-sm cursor-pointer select-none group">
+                <input
+                  type="checkbox"
+                  name="requires_approval"
+                  className="h-4 w-4 rounded border-border text-indigo-600 cursor-pointer"
+                />
+                <span className="text-muted-foreground group-hover:text-foreground transition-colors">
+                  Requires approval before starting
+                </span>
               </label>
 
               {error && (
@@ -218,18 +274,19 @@ export function CreateTaskButton({
                 </div>
               )}
 
+              {/* Footer */}
               <div className="flex justify-end gap-2 pt-2 border-t border-border">
                 <button
                   type="button"
-                  onClick={() => setOpen(false)}
-                  className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium hover:bg-accent"
+                  onClick={handleClose}
+                  className="rounded-xl border border-border bg-white px-4 py-2.5 text-sm font-medium hover:bg-accent transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={pending}
-                  className="rounded-xl bg-primary text-white px-5 py-2.5 text-sm font-semibold shadow-md hover:brightness-110 active:scale-[0.98] disabled:opacity-50"
+                  className="rounded-xl bg-primary text-white px-5 py-2.5 text-sm font-semibold shadow-md hover:brightness-110 active:scale-[0.98] disabled:opacity-50 transition-all"
                 >
                   {pending ? "Creating…" : "Create task"}
                 </button>

@@ -1,5 +1,5 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-// Seed two demo businesses with realistic data.
+// Seed two demo workspaces with realistic data.
 // Idempotent: run twice and you don't get duplicates.
 //
 // Usage: npm run seed
@@ -25,7 +25,7 @@ type SeedUser = {
   email: string;
   first: string;
   last: string;
-  role: "employer" | "c_suite" | "manager" | "team_lead" | "employee";
+  role: "owner" | "admin" | "manager" | "manager" | "member";
   position: string;
   department?: string;
   team?: string;
@@ -34,49 +34,63 @@ type SeedUser = {
 };
 
 const PIXELFORGE: SeedUser[] = [
-  { email: "owner@pixelforge.test",         first: "Olivia",  last: "Carter",  role: "employer",  position: "Founder & CEO" },
-  { email: "cto@pixelforge.test",           first: "Marcus",  last: "Lee",     role: "c_suite",   position: "CTO", department: "Engineering" },
-  { email: "coo@pixelforge.test",           first: "Priya",   last: "Shah",    role: "c_suite",   position: "COO" },
+  { email: "owner@pixelforge.test",         first: "Olivia",  last: "Carter",  role: "owner",  position: "Founder & CEO" },
+  { email: "cto@pixelforge.test",           first: "Marcus",  last: "Lee",     role: "admin",   position: "CTO", department: "Engineering" },
+  { email: "coo@pixelforge.test",           first: "Priya",   last: "Shah",    role: "admin",   position: "COO" },
   { email: "design.lead@pixelforge.test",   first: "Hana",    last: "Mori",    role: "manager",   position: "Design Manager", department: "Design" },
   { email: "eng.lead@pixelforge.test",      first: "Diego",   last: "Alvarez", role: "manager",   position: "Eng Manager", department: "Engineering" },
-  { email: "frontend.lead@pixelforge.test", first: "Sam",     last: "Park",    role: "team_lead", position: "Frontend Team Lead", department: "Engineering", team: "Frontend" },
-  { email: "designer1@pixelforge.test",     first: "Zoe",     last: "Walker",  role: "employee",  position: "Senior Designer", department: "Design" },
-  { email: "designer2@pixelforge.test",     first: "Niko",    last: "Iversen", role: "employee",  position: "Designer",        department: "Design" },
-  { email: "dev1@pixelforge.test",          first: "Aiden",   last: "Brooks",  role: "employee",  position: "Frontend Dev",   department: "Engineering", team: "Frontend" },
-  { email: "dev2@pixelforge.test",          first: "Ravi",    last: "Kapoor",  role: "employee",  position: "Backend Dev",    department: "Engineering", team: "Backend" },
-  { email: "dev3@pixelforge.test",          first: "Lena",    last: "Hofmann", role: "employee",  position: "Frontend Dev",   department: "Engineering", team: "Frontend" },
-  { email: "sales1@pixelforge.test",        first: "Cleo",    last: "Tanaka",  role: "employee",  position: "Sales",          department: "Sales" },
+  { email: "frontend.lead@pixelforge.test", first: "Sam",     last: "Park",    role: "manager", position: "Frontend Team Lead", department: "Engineering", team: "Frontend" },
+  { email: "designer1@pixelforge.test",     first: "Zoe",     last: "Walker",  role: "member",  position: "Senior Designer", department: "Design" },
+  { email: "designer2@pixelforge.test",     first: "Niko",    last: "Iversen", role: "member",  position: "Designer",        department: "Design" },
+  { email: "dev1@pixelforge.test",          first: "Aiden",   last: "Brooks",  role: "member",  position: "Frontend Dev",   department: "Engineering", team: "Frontend" },
+  { email: "dev2@pixelforge.test",          first: "Ravi",    last: "Kapoor",  role: "member",  position: "Backend Dev",    department: "Engineering", team: "Backend" },
+  { email: "dev3@pixelforge.test",          first: "Lena",    last: "Hofmann", role: "member",  position: "Frontend Dev",   department: "Engineering", team: "Frontend" },
+  { email: "sales1@pixelforge.test",        first: "Cleo",    last: "Tanaka",  role: "member",  position: "Sales",          department: "Sales" },
 ];
 
 const BELLA: SeedUser[] = [
-  { email: "bella@bellasauto.test",     first: "Bella",  last: "Romano",  role: "employer", position: "Co-owner",     partnerShare: 60 },
-  { email: "marco@bellasauto.test",     first: "Marco",  last: "Conti",   role: "employer", position: "Co-owner",     partnerShare: 40 },
+  { email: "bella@bellasauto.test",     first: "Bella",  last: "Romano",  role: "owner", position: "Co-owner",     partnerShare: 60 },
+  { email: "marco@bellasauto.test",     first: "Marco",  last: "Conti",   role: "owner", position: "Co-owner",     partnerShare: 40 },
   { email: "manager@bellasauto.test",   first: "Tomas",  last: "Vega",    role: "manager",  position: "Shop Manager" },
-  { email: "mech1@bellasauto.test",     first: "Aria",   last: "Singh",   role: "employee", position: "Senior Mechanic" },
-  { email: "mech2@bellasauto.test",     first: "Jonas",  last: "Becker",  role: "employee", position: "Mechanic" },
-  { email: "mech3@bellasauto.test",     first: "Mira",   last: "Ali",     role: "employee", position: "Junior Mechanic" },
-  { email: "frontdesk@bellasauto.test", first: "Iris",   last: "Wells",   role: "employee", position: "Front Desk" },
-  { email: "apprentice@bellasauto.test",first: "Theo",   last: "Klein",   role: "employee", position: "Apprentice", contract_type: "contract_3m" },
+  { email: "mech1@bellasauto.test",     first: "Aria",   last: "Singh",   role: "member", position: "Senior Mechanic" },
+  { email: "mech2@bellasauto.test",     first: "Jonas",  last: "Becker",  role: "member", position: "Mechanic" },
+  { email: "mech3@bellasauto.test",     first: "Mira",   last: "Ali",     role: "member", position: "Junior Mechanic" },
+  { email: "frontdesk@bellasauto.test", first: "Iris",   last: "Wells",   role: "member", position: "Front Desk" },
+  { email: "apprentice@bellasauto.test",first: "Theo",   last: "Klein",   role: "member", position: "Apprentice", contract_type: "contract_3m" },
 ];
 
 async function ensureUser(u: SeedUser): Promise<string> {
   const { data: existing } = await supabase.auth.admin.listUsers();
   const found = existing.users.find((x) => x.email === u.email);
-  if (found) return found.id;
-  const { data, error } = await supabase.auth.admin.createUser({
-    email: u.email,
-    password: PASSWORD,
-    email_confirm: true,
-    user_metadata: { first_name: u.first, last_name: u.last },
+  
+  let userId: string;
+  if (found) {
+    userId = found.id;
+  } else {
+    const { data, error } = await supabase.auth.admin.createUser({
+      email: u.email,
+      password: PASSWORD,
+      email_confirm: true,
+      user_metadata: { first_name: u.first, last_name: u.last },
+    });
+    if (error || !data.user) throw error;
+    userId = data.user.id;
+  }
+  
+  await supabase.from("profiles").upsert({
+    id: userId,
+    first_name: u.first,
+    last_name: u.last,
+    personal_email: u.email
   });
-  if (error || !data.user) throw error;
-  return data.user.id;
+
+  return userId;
 }
 
 async function ensureBusiness(name: string, type: "corporation" | "partnership", ownerId: string) {
-  const { data: existing } = await supabase.from("businesses").select("*").eq("name", name).maybeSingle();
+  const { data: existing } = await supabase.from("workspaces").select("*").eq("name", name).maybeSingle();
   if (existing) return existing;
-  const { data, error } = await supabase.from("businesses").insert({
+  const { data, error } = await supabase.from("workspaces").insert({
     name,
     business_type: type,
     industry: type === "partnership" ? "Automotive" : "Tech",
@@ -91,44 +105,49 @@ async function ensureBusiness(name: string, type: "corporation" | "partnership",
 }
 
 async function ensureDepartment(businessId: string, name: string): Promise<string> {
-  const { data: existing } = await supabase.from("departments").select("id").eq("business_id", businessId).eq("name", name).maybeSingle();
+  const { data: existing } = await supabase.from("departments").select("id").eq("workspace_id", businessId).eq("name", name).maybeSingle();
   if (existing) return existing.id;
-  const { data } = await supabase.from("departments").insert({ business_id: businessId, name }).select().single();
+  const { data } = await supabase.from("departments").insert({ workspace_id: businessId, name }).select().single();
   return data!.id;
 }
 
 async function ensureTeam(businessId: string, departmentId: string | null, name: string): Promise<string> {
-  const { data: existing } = await supabase.from("teams").select("id").eq("business_id", businessId).eq("name", name).maybeSingle();
+  const { data: existing } = await supabase.from("teams").select("id").eq("workspace_id", businessId).eq("name", name).maybeSingle();
   if (existing) return existing.id;
-  const { data } = await supabase.from("teams").insert({ business_id: businessId, department_id: departmentId, name }).select().single();
+  const { data } = await supabase.from("teams").insert({ workspace_id: businessId, department_id: departmentId, name }).select().single();
   return data!.id;
 }
 
 async function ensureMember(businessId: string, userId: string, u: SeedUser, deptId: string | null, teamId: string | null) {
   const { data: existing } = await supabase
-    .from("business_members")
+    .from("workspace_members")
     .select("id")
-    .eq("business_id", businessId)
+    .eq("workspace_id", businessId)
     .eq("user_id", userId)
     .maybeSingle();
   if (existing) return existing.id;
 
-  const { data } = await supabase.from("business_members").insert({
-    business_id: businessId,
+  const { data, error } = await supabase.from("workspace_members").insert({
+    workspace_id: businessId,
     user_id: userId,
     role: u.role,
     position: u.position,
     department_id: deptId,
     team_id: teamId,
     contract_type: u.contract_type ?? "full_time",
-    is_owner: u.role === "employer",
+    is_owner: u.role === "owner",
     status: "active",
     date_joined: new Date(Date.now() - Math.floor(Math.random() * 365) * 86400000).toISOString().slice(0, 10),
     company_email: u.email.replace(".test", ".io"),
   }).select().single();
 
+  if (error) {
+    console.error("Failed to insert business member:", error);
+    throw error;
+  }
+
   await supabase.from("activity_status").upsert({
-    business_member_id: data!.id,
+    workspace_member_id: data!.id,
     status: ["available","tasking","meeting","lunch_break","personal_time","training"][Math.floor(Math.random()*6)] as any,
   });
 
@@ -139,7 +158,7 @@ async function seedTasks(businessId: string, userIds: string[]) {
   const { count } = await supabase
     .from("tasks")
     .select("id", { count: "exact", head: true })
-    .eq("business_id", businessId);
+    .eq("workspace_id", businessId);
   if ((count ?? 0) > 0) return;
 
   const now = Date.now();
@@ -163,7 +182,7 @@ async function seedTasks(businessId: string, userIds: string[]) {
     const due = new Date(now + offsetDays * 86400000);
     const status = statuses[Math.floor(Math.random() * statuses.length)];
     return {
-      business_id: businessId,
+      workspace_id: businessId,
       title,
       priority: priorities[Math.floor(Math.random() * priorities.length)],
       status,
@@ -181,7 +200,7 @@ async function seedEvents(businessId: string, userIds: string[]) {
   const { count } = await supabase
     .from("calendar_events")
     .select("id", { count: "exact", head: true })
-    .eq("business_id", businessId);
+    .eq("workspace_id", businessId);
   if ((count ?? 0) > 0) return;
 
   const types = ["meeting","task_block","break","lunch","focus","training"] as const;
@@ -197,7 +216,7 @@ async function seedEvents(businessId: string, userIds: string[]) {
         start.setHours(startHour, 0, 0, 0);
         const end = new Date(start.getTime() + (30 + Math.floor(Math.random() * 4) * 30) * 60000);
         rows.push({
-          business_id: businessId,
+          workspace_id: businessId,
           owner_id: uid,
           title: `${types[e % types.length]} block`.replace(/_/g, " "),
           event_type: types[e % types.length],
@@ -214,12 +233,12 @@ async function seedApprovals(businessId: string, requesterId: string) {
   const { count } = await supabase
     .from("approval_requests")
     .select("id", { count: "exact", head: true })
-    .eq("business_id", businessId);
+    .eq("workspace_id", businessId);
   if ((count ?? 0) > 0) return;
 
   await supabase.from("approval_requests").insert([
-    { business_id: businessId, requested_by: requesterId, action_type: "add_department", payload: { name: "Detailing" } },
-    { business_id: businessId, requested_by: requesterId, action_type: "modify_member_role", payload: { note: "Promote Marco to operations lead" } },
+    { workspace_id: businessId, requested_by: requesterId, action_type: "add_department", payload: { name: "Detailing" } },
+    { workspace_id: businessId, requested_by: requesterId, action_type: "modify_member_role", payload: { note: "Promote Marco to operations lead" } },
   ]);
 }
 
@@ -260,10 +279,10 @@ async function main() {
     await ensureMember(bella.id, uid, u, null, null);
     if (u.partnerShare) {
       const { data: existing } = await supabase
-        .from("partners").select("id").eq("business_id", bella.id).eq("user_id", uid).maybeSingle();
+        .from("partners").select("id").eq("workspace_id", bella.id).eq("user_id", uid).maybeSingle();
       if (!existing) {
         await supabase.from("partners").insert({
-          business_id: bella.id, user_id: uid, share_percentage: u.partnerShare,
+          workspace_id: bella.id, user_id: uid, share_percentage: u.partnerShare,
         });
       }
     }
@@ -274,20 +293,20 @@ async function main() {
 
   // Token-format invitation for testing /invite/[token].
   const { data: existingInvite } = await supabase
-    .from("invitations").select("id").eq("business_id", pixel.id).eq("email", "demo.invitee@pixelforge.test").maybeSingle();
+    .from("invitations").select("id").eq("workspace_id", pixel.id).eq("email", "demo.invitee@pixelforge.test").maybeSingle();
   if (!existingInvite) {
     const token = randomBytes(24).toString("hex");
     await supabase.from("invitations").insert({
-      business_id: pixel.id,
+      workspace_id: pixel.id,
       email: "demo.invitee@pixelforge.test",
-      role: "employee",
+      role: "member",
       token,
       invited_by: ownerId,
     });
     console.log(`   demo invite token: ${token}`);
   }
 
-  console.log("\n✅ Seeded 2 businesses + " + (PIXELFORGE.length + BELLA.length) + " users");
+  console.log("\n✅ Seeded 2 workspaces + " + (PIXELFORGE.length + BELLA.length) + " users");
   console.log("🔑 Login with any (password: TestPass123!):");
   console.log("   - owner@pixelforge.test (Employer, Pixelforge Studio)");
   console.log("   - bella@bellasauto.test (Partner-Employer, Bella's Auto)");

@@ -1,9 +1,11 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ACTIVE_BUSINESS_COOKIE } from "@/lib/auth/session";
+import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/auth/session";
 
 export async function POST(request: NextRequest) {
-  const { businessId } = await request.json();
+  const body = await request.json();
+  // Accept either `workspaceId` (preferred) or legacy `businessId`
+  const businessId: string | undefined = body.workspaceId ?? body.businessId;
   if (!businessId) return NextResponse.json({ ok: false }, { status: 400 });
 
   const supabase = await createSupabaseServerClient();
@@ -12,17 +14,17 @@ export async function POST(request: NextRequest) {
 
   // Verify membership before pinning the cookie.
   const { data: membership } = await supabase
-    .from("business_members")
+    .from("workspace_members")
     .select("id")
     .eq("user_id", user.id)
-    .eq("business_id", businessId)
+    .eq("workspace_id", businessId)
     .eq("status", "active")
     .maybeSingle();
 
   if (!membership) return NextResponse.json({ ok: false }, { status: 403 });
 
   const res = NextResponse.json({ ok: true });
-  res.cookies.set(ACTIVE_BUSINESS_COOKIE, businessId, {
+  res.cookies.set(ACTIVE_WORKSPACE_COOKIE, businessId, {
     httpOnly: true,
     sameSite: "lax",
     secure: process.env.NODE_ENV === "production",

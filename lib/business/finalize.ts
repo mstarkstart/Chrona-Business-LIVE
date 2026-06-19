@@ -2,12 +2,13 @@ import "server-only";
 import { randomBytes } from "crypto";
 import { supabaseAdmin } from "@/lib/supabase/admin";
 import type { SetupState } from "./setup";
+import { sendInvitationEmail } from "@/lib/email/send";
 
 export async function finalizeSignup(state: SetupState): Promise<{ userId: string; businessId: string }> {
-  if (!state.business) throw new Error("Missing business step");
+  if (!state.workspace) throw new Error("Missing business step");
   if (!state.account) throw new Error("Missing account step");
 
-  const b = state.business;
+  const b = state.workspace;
   const a = state.account;
 
   // 1. Create the auth user (or sign in if already exists with the password).
@@ -39,7 +40,7 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
 
   // 3. Create the business.
   const { data: biz, error: bizErr } = await supabaseAdmin
-    .from("businesses")
+    .from("workspaces")
     .insert({
       name: b.name,
       founding_date: b.founding_date || null,
@@ -61,7 +62,7 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
   if (a.department_name) {
     const { data: dept } = await supabaseAdmin
       .from("departments")
-      .insert({ business_id: biz.id, name: a.department_name })
+      .insert({ workspace_id: biz.id, name: a.department_name })
       .select()
       .single();
     departmentId = dept?.id ?? null;
@@ -69,7 +70,7 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
   if (a.team_name) {
     const { data: team } = await supabaseAdmin
       .from("teams")
-      .insert({ business_id: biz.id, department_id: departmentId, name: a.team_name })
+      .insert({ workspace_id: biz.id, department_id: departmentId, name: a.team_name })
       .select()
       .single();
     teamId = team?.id ?? null;
@@ -77,11 +78,11 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
 
   // 5. Founding member row.
   const { data: founderMember, error: memberErr } = await supabaseAdmin
-    .from("business_members")
+    .from("workspace_members")
     .insert({
-      business_id: biz.id,
+      workspace_id: biz.id,
       user_id: userId,
-      role: "employer",
+      role: "owner",
       position: a.position || "Founder",
       department_id: departmentId,
       team_id: teamId,
@@ -98,14 +99,14 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
 
   // Initialise activity_status for the founder.
   await supabaseAdmin.from("activity_status").upsert({
-    business_member_id: founderMember.id,
+    workspace_member_id: founderMember.id,
     status: "available",
   });
 
   // 6. Partnership partners.
   if (b.business_type === "partnership" && a.partners.length > 0) {
     await supabaseAdmin.from("partners").insert({
-      business_id: biz.id,
+      workspace_id: biz.id,
       user_id: userId,
       share_percentage: a.partners.reduce((acc, p) => acc + p.share_percentage, 0) < 100
         ? 100 - a.partners.reduce((acc, p) => acc + p.share_percentage, 0)
@@ -114,9 +115,9 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
     for (const partner of a.partners) {
       const token = randomBytes(24).toString("hex");
       await supabaseAdmin.from("invitations").insert({
-        business_id: biz.id,
+        workspace_id: biz.id,
         email: partner.email,
-        role: "employer",
+        role: "owner",
         token,
         invited_by: userId,
       });
@@ -135,14 +136,14 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
         const { data: dept } = await supabaseAdmin
           .from("departments")
           .select("id")
-          .eq("business_id", biz.id)
+          .eq("workspace_id", biz.id)
           .eq("name", emp.department)
           .maybeSingle();
         if (dept) empDeptId = dept.id;
         else {
           const { data: newDept } = await supabaseAdmin
             .from("departments")
-            .insert({ business_id: biz.id, name: emp.department })
+            .insert({ workspace_id: biz.id, name: emp.department })
             .select("id")
             .single();
           empDeptId = newDept?.id ?? null;
@@ -152,14 +153,14 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
         const { data: team } = await supabaseAdmin
           .from("teams")
           .select("id")
-          .eq("business_id", biz.id)
+          .eq("workspace_id", biz.id)
           .eq("name", emp.team)
           .maybeSingle();
         if (team) empTeamId = team.id;
         else {
           const { data: newTeam } = await supabaseAdmin
             .from("teams")
-            .insert({ business_id: biz.id, department_id: empDeptId, name: emp.team })
+            .insert({ workspace_id: biz.id, department_id: empDeptId, name: emp.team })
             .select("id")
             .single();
           empTeamId = newTeam?.id ?? null;
@@ -167,7 +168,7 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
       }
 
       await supabaseAdmin.from("invitations").insert({
-        business_id: biz.id,
+        workspace_id: biz.id,
         email: emp.personal_email,
         role: emp.role,
         department_id: empDeptId,
@@ -178,6 +179,18 @@ export async function finalizeSignup(state: SetupState): Promise<{ userId: strin
         token,
         invited_by: userId,
       });
+
+      // Send invitation email to the employee if they have a personal email.
+      if (emp.personal_email) {
+        const inviterName = [a.first_name, a.last_name].filter(Boolean).join(" ") || "Your employer";
+        await sendInvitationEmail({
+          to: emp.personal_email,
+          workspaceName: b.name,
+          inviterName,
+          inviteToken: token,
+          role: emp.role,
+        }).catch((e) => console.error("[email] employee invitation email failed:", e));
+      }
     }
   }
 

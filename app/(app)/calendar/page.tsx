@@ -1,164 +1,258 @@
 import Link from "next/link";
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { requireUser, requireActiveBusiness } from "@/lib/auth/session";
-import { availableWindows } from "@/lib/calendar/windows";
-import { Card, CardTitle } from "@/components/dashboard/Cards";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Button } from "@/components/ui/button";
-
-const EVENT_COLOR: Record<string, string> = {
-  meeting:    "#f97316",
-  task_block: "#eab308",
-  break:      "#3b82f6",
-  lunch:      "#3b82f6",
-  training:   "#6b7280",
-  focus:      "#a855f7",
-  other:      "#94a3b8",
-};
+import { supabaseAdmin } from "@/lib/supabase/admin";
+import { requireUser, requireActiveWorkspace } from "@/lib/auth/session";
+import { CalendarRealtimeSync } from "@/components/calendar/CalendarRealtimeSync";
+import { FullCalendarClient } from "@/components/calendar/FullCalendarClient";
+import { QuickScheduleForm } from "@/components/calendar/QuickScheduleForm";
+import { Users, CalendarDays } from "lucide-react";
+import { UpcomingReminders } from "@/components/calendar/UpcomingReminders";
 
 async function createEvent(formData: FormData) {
   "use server";
   const user = await requireUser();
-  const active = await requireActiveBusiness();
+  const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
-  await supabase.from("calendar_events").insert({
-    business_id: active.business.id,
-    owner_id: user.id,
-    title: String(formData.get("title") ?? "").trim(),
-    event_type: (String(formData.get("event_type") ?? "meeting") as "meeting" | "task_block" | "break" | "lunch" | "training" | "focus" | "other"),
-    start_at: String(formData.get("start_at")),
-    end_at: String(formData.get("end_at")),
+
+  const date     = String(formData.get("date") ?? "");
+  let startT   = String(formData.get("start_time") ?? "");
+  let endT     = String(formData.get("end_time") ?? "");
+  const is_team  = formData.get("is_team") === "on";
+  const title    = String(formData.get("title") ?? "").trim();
+  const typeStr  = String(formData.get("event_type") ?? "meeting");
+
+  if (!startT) startT = "09:00";
+  if (!endT) endT = "10:00";
+  
+  if (startT >= endT) {
+    // Automatically add 1 hour if end time is invalid
+    const [h, m] = startT.split(":").map(Number);
+    endT = `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+  }
+
+  const { error } = await supabase.from("calendar_events").insert({
+    workspace_id: active.workspace.id,
+    owner_id:     user.id,
+    title,
+    event_type:   typeStr as any,
+    start_at:     `${date}T${startT}:00`,
+    end_at:       `${date}T${endT}:00`,
+    is_team,
   });
+
+  if (error) {
+    console.error("Failed to insert calendar event:", error);
+    throw new Error(error.message);
+  }
+
+  // Broadcast realtime event
+  supabaseAdmin.channel(`calendar:${active.workspace.id}`).send({
+    type: "broadcast",
+    event: "calendar_updated",
+    payload: { action: "insert" }
+  });
+
+  if (is_team) {
+    const { data: members } = await supabaseAdmin
+      .from("workspace_members")
+      .select("user_id")
+      .eq("workspace_id", active.workspace.id)
+      .eq("status", "active")
+      .neq("user_id", user.id);
+
+    if (members && members.length > 0) {
+      const inserts = members.map(m => ({
+        workspace_id: active.workspace.id,
+        user_id: m.user_id,
+        type: "task_assignment",
+        title: `Team Calendar Event: ${title}`,
+        body: `A new team event was scheduled for ${date} at ${startT}.`
+      }));
+      await supabaseAdmin.from("notifications").insert(inserts as any);
+    }
+  }
+
   revalidatePath("/calendar");
-  revalidatePath("/calendar/week");
-  revalidatePath("/calendar/month");
 }
 
-export default async function CalendarPage() {
+async function deleteEvent(id: string) {
+  "use server";
   const user = await requireUser();
-  const active = await requireActiveBusiness();
+  const supabase = await createSupabaseServerClient();
+  const active = await requireActiveWorkspace();
+
+  const { error } = await supabase
+    .from("calendar_events")
+    .delete()
+    .eq("id", id)
+    .eq("owner_id", user.id);
+
+  if (!error) {
+    supabaseAdmin.channel(`calendar:${active.workspace.id}`).send({
+      type: "broadcast",
+      event: "calendar_updated",
+      payload: { action: "delete" }
+    });
+    revalidatePath("/calendar");
+  }
+}
+
+export default async function CalendarPage({
+  searchParams,
+}: {
+  searchParams?: Promise<{ team?: string }>;
+}) {
+  const sp       = searchParams ? await searchParams : {};
+  const teamMode = sp?.team === "1";
+
+  const user   = await requireUser();
+  const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
 
   const today = new Date();
-  const dayStart = new Date(today.getFullYear(), today.getMonth(), today.getDate()).toISOString();
-  const dayEnd = new Date(today.getFullYear(), today.getMonth(), today.getDate() + 1).toISOString();
+  
+  // Fetch events for the current month +/- 1 month to ensure enough data for the view
+  const fetchStart = new Date(today);
+  fetchStart.setMonth(fetchStart.getMonth() - 1);
+  const fetchEnd = new Date(today);
+  fetchEnd.setMonth(fetchEnd.getMonth() + 2);
 
-  const { data: todayEvents } = await supabase
+  // Personal or team query
+  const eventsQuery = supabase
     .from("calendar_events")
-    .select("*")
-    .eq("business_id", active.business.id)
-    .eq("owner_id", user.id)
-    .gte("start_at", dayStart)
-    .lt("start_at", dayEnd)
-    .order("start_at");
+    .select("*, profiles!owner_id(first_name, last_name)")
+    .eq("workspace_id", active.workspace.id)
+    .gte("start_at", fetchStart.toISOString())
+    .lte("start_at", fetchEnd.toISOString());
 
-  const windows = await availableWindows(active.business.id, user.id, 7);
+  if (!teamMode) eventsQuery.eq("owner_id", user.id);
+  else           eventsQuery.or(`owner_id.eq.${user.id},is_team.eq.true`);
 
-  const now = new Date();
-  const totalMinutesToday = (todayEvents ?? []).reduce((acc, e) => {
-    const s = new Date(e.start_at), end = new Date(e.end_at);
-    return acc + Math.max(0, (end.getTime() - s.getTime()) / 60000);
-  }, 0);
-  const elapsedMinutesToday = (todayEvents ?? []).reduce((acc, e) => {
-    const s = new Date(e.start_at), end = new Date(e.end_at);
-    if (end <= now) return acc + (end.getTime() - s.getTime()) / 60000;
-    if (s <= now) return acc + (now.getTime() - s.getTime()) / 60000;
-    return acc;
-  }, 0);
-  const progressPct = totalMinutesToday === 0 ? 0 : Math.round((elapsedMinutesToday / totalMinutesToday) * 100);
+  const { data: rawEvents } = await eventsQuery;
+  const allEvents = (rawEvents ?? []) as any[];
+
+  const todayDate = today.toLocaleDateString("en-US", { weekday: "long", month: "long", year: "numeric" });
+  const todayStr = today.toISOString().slice(0, 10);
+
+  // Compute per-member event counts for today (team mode only, no extra query)
+  const memberMap = teamMode
+    ? (allEvents ?? []).reduce((acc, e) => {
+        if (!e.start_at.startsWith(todayStr)) return acc;
+        const key = e.owner_id ?? "?";
+        const p = e.profiles;
+        const name = p ? `${p.first_name ?? ""} ${p.last_name ?? ""}`.trim() : "Teammate";
+        acc[key] = { name: name || "Teammate", count: (acc[key]?.count ?? 0) + 1 };
+        return acc;
+      }, {} as Record<string, { name: string; count: number }>)
+    : null;
 
   return (
-    <div className="p-6 space-y-6 max-w-6xl">
-      <header className="flex justify-between items-center">
-        <div>
-          <h1 className="text-2xl font-semibold">Calendar</h1>
-          <p className="text-sm text-muted-foreground">Today · {today.toLocaleDateString("en-US", { weekday: "long", month: "long", day: "numeric" })}</p>
+    <div className="bg-mesh p-4 md:p-6 h-[calc(100vh-57px)] flex flex-col overflow-hidden space-y-4 animate-fade-up">
+      <CalendarRealtimeSync workspaceId={active.workspace.id} ownerId={user.id} />
+
+      {/* ── Header ── */}
+      <header className="shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm">
+            <CalendarDays className="h-5 w-5 text-white" />
+          </div>
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight leading-tight">Calendar</h1>
+            <p className="text-xs text-muted-foreground font-medium">{todayDate}</p>
+          </div>
         </div>
-        <div className="flex gap-2">
-          <Link href="/calendar"><Button size="sm" variant="soft">Today</Button></Link>
-          <Link href="/calendar/week"><Button size="sm" variant="outline">Week</Button></Link>
-          <Link href="/calendar/month"><Button size="sm" variant="outline">Month</Button></Link>
+
+        {/* Scope toggle: My Calendar / Team Calendar */}
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-muted/40 p-1 rounded-xl border border-border gap-0.5">
+            <Link
+              href="/calendar"
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                !teamMode
+                  ? "bg-white text-indigo-600 shadow-sm border border-border/50"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <CalendarDays className="h-3.5 w-3.5" />
+              My Calendar
+            </Link>
+            <Link
+              href="/calendar?team=1"
+              className={`flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                teamMode
+                  ? "bg-indigo-600 text-white shadow-sm"
+                  : "text-muted-foreground hover:text-foreground"
+              }`}
+            >
+              <Users className="h-3.5 w-3.5" />
+              Team Calendar
+            </Link>
+          </div>
         </div>
       </header>
 
-      <Card>
-        <CardTitle>Today&apos;s blocks</CardTitle>
-        <div className="mt-4 space-y-2">
-          {(todayEvents ?? []).length === 0 && <p className="text-sm text-muted-foreground italic">No events scheduled today.</p>}
-          {(todayEvents ?? []).map((e) => (
-            <div key={e.id} className="flex items-center gap-3 rounded-lg border border-border p-3">
-              <span className="h-3 w-3 rounded-full" style={{ background: EVENT_COLOR[e.event_type] ?? "#94a3b8" }} />
-              <div className="flex-1">
-                <div className="text-sm font-medium">{e.title}</div>
-                <div className="text-xs text-muted-foreground capitalize">
-                  {e.event_type.replace("_", " ")} · {new Date(e.start_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                  {" – "}
-                  {new Date(e.end_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                </div>
-              </div>
-            </div>
-          ))}
+      {/* ── Main Layout: Calendar + Sidebar ── */}
+      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-5">
+        
+        {/* FullCalendar wrapper */}
+        <div className="flex-1 min-h-0 overflow-hidden animate-fade-up delay-100">
+          <FullCalendarClient
+            events={allEvents ?? []}
+            teamMode={teamMode}
+            currentUserId={user.id}
+            createEvent={createEvent}
+            deleteEvent={deleteEvent}
+          />
         </div>
-      </Card>
 
-      <Card>
-        <CardTitle>Current progression</CardTitle>
-        <div className="mt-3">
-          <div className="h-2 w-full rounded-full bg-muted">
-            <div className="h-full rounded-full bg-indigo-500 transition-all" style={{ width: `${progressPct}%` }} />
+        {/* Sidebar */}
+        <div className="w-full lg:w-80 shrink-0 flex flex-col overflow-y-auto pr-1 animate-fade-up delay-200 scrollbar-hide pb-10">
+          {/* Quick Schedule card */}
+          <div className="glass-card rounded-3xl p-6 shadow-xl shadow-indigo-900/5 bg-white/60 backdrop-blur-xl border border-white/60 relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-32 bg-indigo-400/10 rounded-full blur-3xl -z-10 pointer-events-none translate-x-1/3 -translate-y-1/3" />
+            <h2 className="text-sm font-extrabold tracking-wide text-foreground mb-6 flex items-center gap-2">
+              <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-500/30">
+                <span className="text-white text-xs font-black">+</span>
+              </div>
+              Quick Schedule
+            </h2>
+            <QuickScheduleForm createEvent={createEvent} defaultDate={todayStr} />
           </div>
-          <p className="text-xs text-muted-foreground mt-2">{progressPct}% of today&apos;s blocks complete</p>
+
+          <UpcomingReminders events={allEvents ?? []} />
+
+          {/* Team Today panel — only in team mode */}
+          {teamMode && memberMap && Object.keys(memberMap).length > 0 && (
+            <div className="glass-card rounded-3xl p-5 shadow-lg shadow-indigo-900/5 bg-white/60 backdrop-blur-xl border border-white/60 mt-4 animate-fade-up delay-300">
+              <h2 className="text-sm font-extrabold tracking-wide text-foreground mb-4 flex items-center gap-2">
+                <div className="h-6 w-6 rounded-md bg-indigo-100 flex items-center justify-center">
+                  <Users className="h-3.5 w-3.5 text-indigo-600" />
+                </div>
+                Team Today
+              </h2>
+              <ul className="space-y-2">
+                {Object.entries(memberMap).map(([uid, val]) => {
+                  const { name, count } = val as { name: string; count: number };
+                  return (
+                    <li key={uid} className="flex items-center justify-between py-1.5 px-3 rounded-xl bg-white/60 border border-white/80 hover:bg-indigo-50/60 transition-colors">
+                      <div className="flex items-center gap-2.5">
+                        <div className="h-7 w-7 rounded-full bg-gradient-to-br from-indigo-400 to-violet-500 flex items-center justify-center text-[10px] font-black text-white shadow-sm">
+                          {name.split(" ").map((n: string) => n[0]).join("").slice(0, 2).toUpperCase()}
+                        </div>
+                        <span className="text-xs font-semibold text-foreground">{name}</span>
+                      </div>
+                      <span className="text-[10px] font-bold bg-indigo-100 text-indigo-600 px-2 py-0.5 rounded-full border border-indigo-200/60">
+                        {count} event{count !== 1 ? "s" : ""}
+                      </span>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
         </div>
-      </Card>
 
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Card>
-          <CardTitle>Available windows</CardTitle>
-          <ul className="mt-3 space-y-1 text-sm">
-            {windows.length === 0 && <li className="text-muted-foreground italic">No open windows in next 7 days.</li>}
-            {windows.slice(0, 8).map((w, i) => {
-              const mins = (w.end.getTime() - w.start.getTime()) / 60000;
-              const dur = mins >= 60 ? `${Math.round(mins / 60 * 10) / 10}h` : `${Math.round(mins)}m`;
-              return (
-                <li key={i}>
-                  {w.start.toLocaleDateString("en-US", { weekday: "short", month: "short", day: "numeric" })}
-                  {" "}
-                  {w.start.toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                  {" — "}
-                  <span className="text-muted-foreground">{dur}</span>
-                </li>
-              );
-            })}
-          </ul>
-        </Card>
-
-        <Card>
-          <CardTitle>New event</CardTitle>
-          <form action={createEvent} className="mt-3 grid grid-cols-1 gap-2">
-            <div><Label className="text-xs">Title</Label><Input name="title" required /></div>
-            <div className="grid grid-cols-2 gap-2">
-              <div>
-                <Label className="text-xs">Type</Label>
-                <select name="event_type" className="flex h-10 w-full rounded-lg border border-border bg-card px-3 text-sm">
-                  <option value="meeting">Meeting</option>
-                  <option value="task_block">Task block</option>
-                  <option value="break">Break</option>
-                  <option value="lunch">Lunch</option>
-                  <option value="training">Training</option>
-                  <option value="focus">Focus</option>
-                  <option value="other">Other</option>
-                </select>
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-2">
-              <div><Label className="text-xs">Start</Label><Input name="start_at" type="datetime-local" required /></div>
-              <div><Label className="text-xs">End</Label><Input name="end_at" type="datetime-local" required /></div>
-            </div>
-            <Button type="submit">Add to calendar</Button>
-          </form>
-        </Card>
       </div>
     </div>
   );

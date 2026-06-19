@@ -4,7 +4,9 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import type { Role, Tables } from "@/lib/supabase/types";
 
-const ACTIVE_BUSINESS_COOKIE = "chrona-active-business";
+import { cache } from "react";
+
+const ACTIVE_WORKSPACE_COOKIE = "chrona-active-workspace";
 
 export type SessionUser = {
   id: string;
@@ -13,12 +15,12 @@ export type SessionUser = {
 };
 
 export type ActiveMembership = {
-  business: Tables<"businesses">;
-  member: Tables<"business_members">;
+  workspace: Tables<"workspaces">;
+  member: Tables<"workspace_members">;
   role: Role;
 };
 
-export async function getCurrentUser(): Promise<SessionUser | null> {
+export const getCurrentUser = cache(async (): Promise<SessionUser | null> => {
   const supabase = await createSupabaseServerClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return null;
@@ -30,7 +32,7 @@ export async function getCurrentUser(): Promise<SessionUser | null> {
     .maybeSingle();
 
   return { id: user.id, email: user.email ?? null, profile };
-}
+});
 
 export async function requireUser(): Promise<SessionUser> {
   const user = await getCurrentUser();
@@ -38,48 +40,49 @@ export async function requireUser(): Promise<SessionUser> {
   return user;
 }
 
-// All businesses the current user belongs to (status='active'). Used by switcher.
-export async function listMyMemberships(): Promise<ActiveMembership[]> {
-  const supabase = await createSupabaseServerClient();
-  const { data: { user } } = await supabase.auth.getUser();
+// All workspaces the current user belongs to (status='active'). Used by switcher.
+export const listMyMemberships = cache(async (): Promise<ActiveMembership[]> => {
+  const user = await getCurrentUser();
   if (!user) return [];
 
+  const supabase = await createSupabaseServerClient();
   const { data, error } = await supabase
-    .from("business_members")
-    .select("*, business:businesses(*)")
+    .from("workspace_members")
+    .select("*, workspace:workspaces(*)")
     .eq("user_id", user.id)
     .eq("status", "active");
 
   if (error || !data) return [];
 
   return data
-    .filter((row): row is typeof row & { business: Tables<"businesses"> } => Boolean(row.business))
+    .filter((row): row is typeof row & { workspace: Tables<"workspaces"> } => Boolean(row.workspace))
     .map((row) => ({
-      business: row.business,
-      member: row as Tables<"business_members">,
+      workspace: row.workspace,
+      member: row as Tables<"workspace_members">,
       role: row.role as Role,
     }));
-}
+});
 
-export async function getActiveBusiness(): Promise<ActiveMembership | null> {
+export const getActiveWorkspace = cache(async (): Promise<ActiveMembership | null> => {
   const cookieStore = await cookies();
   const memberships = await listMyMemberships();
   if (memberships.length === 0) return null;
 
-  const cookieValue = cookieStore.get(ACTIVE_BUSINESS_COOKIE)?.value;
-  const chosen = memberships.find((m) => m.business.id === cookieValue) ?? memberships[0];
+  const cookieValue = cookieStore.get(ACTIVE_WORKSPACE_COOKIE)?.value;
+  const chosen = memberships.find((m) => m.workspace.id === cookieValue) ?? memberships[0];
 
-  // Pin the GUC for downstream RLS checks that read current_business_id().
+  // Pin the GUC for downstream RLS checks that read current_workspace_id().
   const supabase = await createSupabaseServerClient();
-  await supabase.rpc("set_active_business", { p_business_id: chosen.business.id });
+  await supabase.rpc("set_active_workspace", { p_workspace_id: chosen.workspace.id });
 
   return chosen;
-}
+});
 
-export async function requireActiveBusiness(): Promise<ActiveMembership> {
-  const m = await getActiveBusiness();
+export async function requireActiveWorkspace(): Promise<ActiveMembership> {
+  const m = await getActiveWorkspace();
   if (!m) redirect("/signup");
   return m;
 }
 
-export { ACTIVE_BUSINESS_COOKIE };
+export { ACTIVE_WORKSPACE_COOKIE };
+

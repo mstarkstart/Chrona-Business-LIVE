@@ -17,7 +17,7 @@ export async function availableWindows(
   const { data: events } = await supabase
     .from("calendar_events")
     .select("start_at, end_at")
-    .eq("business_id", businessId)
+    .eq("workspace_id", businessId)
     .eq("owner_id", ownerId)
     .gte("end_at", now.toISOString())
     .lte("start_at", end.toISOString())

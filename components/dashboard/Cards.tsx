@@ -31,23 +31,31 @@ export function ProgressBar({
   label?: string;
   color?: string;
 }) {
+  const pct = Math.min(100, Math.max(0, percent));
+
   return (
-    <div className="space-y-2">
-      {label && (
-        <div className="flex justify-between text-xs text-muted-foreground">
-          <span>{label}</span>
-          <span className="font-semibold" style={{ color }}>{percent}%</span>
-        </div>
-      )}
-      <div className="h-2 w-full rounded-full bg-muted overflow-hidden">
+    <div className="space-y-2 w-full">
+      <div className="flex items-center justify-between text-xs">
+        {label && (
+          <span className="text-muted-foreground font-semibold">{label}</span>
+        )}
+        <span className="font-bold shrink-0" style={{ color }}>
+          {pct}%
+        </span>
+      </div>
+      {/* Bar track */}
+      <div className="h-2 w-full rounded-full bg-slate-100 border border-slate-200/50 overflow-hidden relative">
+        {/* Fill */}
         <div
-          className="h-full rounded-full transition-all duration-700"
+          className="h-full rounded-full transition-all duration-700 relative overflow-hidden"
           style={{
-            width: `${percent}%`,
+            width: `${pct}%`,
             background: `linear-gradient(90deg, ${color}cc, ${color})`,
-            boxShadow: `0 0 8px ${color}66`,
+            boxShadow: `0 0 8px ${color}55`,
           }}
-        />
+        >
+          <div className="absolute inset-0 bar-shimmer opacity-40" />
+        </div>
       </div>
     </div>
   );
@@ -74,7 +82,7 @@ export function Ring({
         <svg width={size} height={size} viewBox={`0 0 ${size} ${size}`}>
           <circle
             cx={size / 2} cy={size / 2} r={r}
-            stroke="rgba(255,255,255,0.06)" strokeWidth={7}
+            stroke="#e2e8f0" strokeWidth={7}
             fill="none"
           />
           <circle

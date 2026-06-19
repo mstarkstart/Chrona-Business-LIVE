@@ -5,16 +5,16 @@ import { createSupabaseServerClient } from "@/lib/supabase/server";
 export async function recommendAssignee(businessId: string): Promise<{ userId: string; name: string } | null> {
   const supabase = await createSupabaseServerClient();
   const { data: members } = await supabase
-    .from("business_members")
-    .select("user_id, profiles!business_members_user_id_profiles_fkey(first_name, last_name)")
-    .eq("business_id", businessId)
+    .from("workspace_members")
+    .select("user_id, profiles!workspace_members_user_id_profiles_fkey(first_name, last_name)")
+    .eq("workspace_id", businessId)
     .eq("status", "active");
   if (!members || members.length === 0) return null;
 
   const { data: openTasks } = await supabase
     .from("tasks")
     .select("assigned_to")
-    .eq("business_id", businessId)
+    .eq("workspace_id", businessId)
     .neq("status", "completed")
     .neq("status", "cancelled");
 

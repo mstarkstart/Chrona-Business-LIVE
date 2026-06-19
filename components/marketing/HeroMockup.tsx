@@ -32,7 +32,7 @@ export function HeroMockup() {
         </div>
         <div className="ml-3 flex-1 max-w-md mx-auto h-7 rounded-md bg-white border border-border flex items-center justify-center px-3 gap-1.5 text-xs text-muted-foreground">
           <div className="h-2 w-2 rounded-full bg-emerald-500" />
-          chrona.business/dashboard
+          chrona.workspace/dashboard
         </div>
         <Bell className="h-4 w-4 text-muted-foreground" />
       </div>

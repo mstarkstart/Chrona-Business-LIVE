@@ -39,7 +39,7 @@ export type EmployeeRow = {
   first_name: string;
   last_name: string;
   personal_email: string;
-  role: "employer" | "c_suite" | "manager" | "team_lead" | "employee";
+  role: "owner" | "admin" | "manager" | "member";
   department: string;
   team: string;
   position: string;
@@ -49,7 +49,7 @@ export type EmployeeRow = {
 };
 
 export type SetupState = {
-  business?: BusinessStep;
+  workspace?: BusinessStep;
   account?: AccountStep;
   employees?: EmployeeRow[];
 };

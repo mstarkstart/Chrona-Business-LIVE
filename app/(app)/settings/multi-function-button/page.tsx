@@ -1,6 +1,6 @@
 import { revalidatePath } from "next/cache";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { requireUser, requireActiveBusiness } from "@/lib/auth/session";
+import { requireUser, requireActiveWorkspace } from "@/lib/auth/session";
 import { Card } from "@/components/dashboard/Cards";
 import { Button } from "@/components/ui/button";
 
@@ -16,7 +16,7 @@ const ALL_ACTIONS: { key: string; label: string }[] = [
 async function save(formData: FormData) {
   "use server";
   const user = await requireUser();
-  const active = await requireActiveBusiness();
+  const active = await requireActiveWorkspace();
   const picked: string[] = [];
   for (const a of ALL_ACTIONS) {
     if (formData.get(a.key) === "on") picked.push(a.key);
@@ -26,7 +26,7 @@ async function save(formData: FormData) {
   const supabase = await createSupabaseServerClient();
   await supabase.from("multi_function_button_config").upsert({
     user_id: user.id,
-    business_id: active.business.id,
+    workspace_id: active.workspace.id,
     actions: picked,
   });
   revalidatePath("/settings/multi-function-button");
@@ -34,13 +34,13 @@ async function save(formData: FormData) {
 
 export default async function MFBSettings() {
   const user = await requireUser();
-  const active = await requireActiveBusiness();
+  const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
   const { data: cfg } = await supabase
     .from("multi_function_button_config")
     .select("actions")
     .eq("user_id", user.id)
-    .eq("business_id", active.business.id)
+    .eq("workspace_id", active.workspace.id)
     .maybeSingle();
   const selected = new Set(Array.isArray(cfg?.actions) ? (cfg.actions as string[]) : []);
 

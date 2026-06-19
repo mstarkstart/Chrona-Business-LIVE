@@ -14,7 +14,7 @@ export function BusinessSwitcher({ active, options }: { active: Item; options: I
   function pick(id: string) {
     if (id === active.id) { setOpen(false); return; }
     startTransition(async () => {
-      await fetch("/api/business/switch", {
+      await fetch("/api/workspace/switch", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ businessId: id }),

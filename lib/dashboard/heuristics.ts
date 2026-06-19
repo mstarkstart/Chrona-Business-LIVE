@@ -9,7 +9,7 @@ export async function efficientEmployees(businessId: string, limit = 5) {
   const { data } = await supabase
     .from("tasks")
     .select("assigned_to")
-    .eq("business_id", businessId)
+    .eq("workspace_id", businessId)
     .eq("status", "completed")
     .gte("completed_at", sevenDaysAgo);
 
@@ -37,7 +37,7 @@ export async function overworkedEmployees(businessId: string) {
   const { data: tasks } = await supabase
     .from("tasks")
     .select("assigned_to, start_at, end_at")
-    .eq("business_id", businessId)
+    .eq("workspace_id", businessId)
     .not("assigned_to", "is", null)
     .not("start_at",    "is", null)
     .not("end_at",      "is", null)
@@ -68,8 +68,8 @@ export async function overworkedEmployees(businessId: string) {
 export async function progressForBusiness(businessId: string) {
   const supabase = await createSupabaseServerClient();
   const [{ count: total }, { count: done }] = await Promise.all([
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("business_id", businessId),
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("status", "completed"),
+    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("workspace_id", businessId),
+    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("workspace_id", businessId).eq("status", "completed"),
   ]);
   const t = total ?? 0;
   const d = done  ?? 0;
@@ -79,8 +79,8 @@ export async function progressForBusiness(businessId: string) {
 export async function progressForUser(businessId: string, userId: string) {
   const supabase = await createSupabaseServerClient();
   const [{ count: t }, { count: d }] = await Promise.all([
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("assigned_to", userId),
-    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("business_id", businessId).eq("assigned_to", userId).eq("status", "completed"),
+    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("workspace_id", businessId).eq("assigned_to", userId),
+    supabase.from("tasks").select("id", { count: "exact", head: true }).eq("workspace_id", businessId).eq("assigned_to", userId).eq("status", "completed"),
   ]);
   const total = t ?? 0;
   const done  = d ?? 0;
