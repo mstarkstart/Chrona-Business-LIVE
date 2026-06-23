@@ -71,7 +71,7 @@ export default async function MemberDetailPage({
 
   const { data: member } = await supabase
     .from("workspace_members")
-    .select("*, profiles!workspace_members_user_id_profiles_fkey(*), departments(name), teams(name)")
+    .select("*, profiles!workspace_members_user_id_profiles_fkey(*), departments(name), teams!workspace_members_team_id_fkey(name)")
     .eq("id", id)
     .eq("workspace_id", active.workspace.id)
     .maybeSingle();

@@ -85,7 +85,7 @@ export default async function MembersPage() {
           avatar_url
         ), 
         departments(name), 
-        teams(name),
+        teams!workspace_members_team_id_fkey(name),
         activity_status(status)
       `)
       .eq("workspace_id", active.workspace.id)

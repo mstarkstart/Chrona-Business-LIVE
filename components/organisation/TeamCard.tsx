@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Trash2, Users, Crown, Layers, X, Shield, ArrowRight } from "lucide-react";
+import { Trash2, Users, Crown, Layers, X, Shield, ArrowRight, Loader2 } from "lucide-react";
 
 interface TeamCardProps {
   id: string;
@@ -38,6 +38,20 @@ export function TeamCard({
 }: TeamCardProps) {
   const [showMembersModal, setShowMembersModal] = useState(false);
   const [updatingLead, setUpdatingLead] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+
+  async function handleDeleteConfirm() {
+    setIsDeleting(true);
+    try {
+      await onDelete(id);
+    } catch (err) {
+      console.error("Failed to delete team:", err);
+    } finally {
+      setIsDeleting(false);
+      setShowDeleteConfirm(false);
+    }
+  }
 
   // Deterministic styling based on team name
   const hash = name.split("").reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -113,7 +127,7 @@ export function TeamCard({
 
             {canDelete && (
               <button
-                onClick={() => onDelete(id)}
+                onClick={() => setShowDeleteConfirm(true)}
                 className="opacity-0 group-hover:opacity-100 p-2 rounded-lg text-muted-foreground hover:text-red-600 hover:bg-red-50 transition-all cursor-pointer duration-200"
                 title="Delete team"
               >
@@ -302,6 +316,52 @@ export function TeamCard({
                 className="px-4 py-2 bg-slate-900 text-white hover:bg-slate-800 text-xs font-semibold rounded-xl cursor-pointer transition-all active:scale-98"
               >
                 Close
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* ─── Delete Confirmation Modal ─── */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
+          <div 
+            className="absolute inset-0 bg-slate-950/40 backdrop-blur-md transition-opacity duration-300"
+            onClick={() => !isDeleting && setShowDeleteConfirm(false)}
+          />
+          
+          <div className="relative w-full max-w-sm rounded-2xl border border-slate-200 bg-white/90 backdrop-blur-xl p-6 shadow-2xl animate-scale-in z-10 text-center">
+            {/* Alert Icon */}
+            <div className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-650 border border-red-100 mb-4 animate-pulse-soft">
+              <Trash2 className="h-5 w-5" />
+            </div>
+            
+            <h3 className="text-base font-bold text-foreground mb-1.5">Delete Team?</h3>
+            <p className="text-xs text-muted-foreground leading-relaxed mb-5">
+              Are you sure you want to delete <span className="font-semibold text-foreground">"{name}"</span>? This action is permanent and all member assignments will be cleared.
+            </p>
+            
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 px-4 py-2.5 bg-slate-100 hover:bg-slate-200/80 text-xs font-semibold rounded-xl text-slate-700 transition-colors disabled:opacity-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                disabled={isDeleting}
+                onClick={handleDeleteConfirm}
+                className="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-xs font-semibold rounded-xl text-white shadow-[0_0_12px_rgba(220,38,38,0.15)] transition-all active:scale-98 disabled:opacity-50 flex items-center justify-center gap-1.5 cursor-pointer"
+              >
+                {isDeleting ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Trash2 className="h-3.5 w-3.5" />
+                )}
+                <span>{isDeleting ? "Deleting..." : "Delete"}</span>
               </button>
             </div>
           </div>

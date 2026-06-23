@@ -55,7 +55,7 @@ export default async function TeamsPage() {
         description,
         lead_member_id,
         departments (id, name),
-        workspace_members (
+        workspace_members!workspace_members_team_id_fkey (
           id,
           role,
           profiles!workspace_members_user_id_profiles_fkey (
