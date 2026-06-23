@@ -47,8 +47,16 @@ export default async function DepartmentsPage() {
       id,
       name,
       description,
-      teams (id),
-      workspace_members (id),
+      teams (id, name),
+      workspace_members (
+        id,
+        role,
+        profiles!workspace_members_user_id_profiles_fkey (
+          first_name,
+          last_name,
+          avatar_url
+        )
+      ),
       tasks (id, status)
     `)
     .eq("workspace_id", active.workspace.id)
@@ -133,6 +141,12 @@ export default async function DepartmentsPage() {
             activeTasksCount={
               d.tasks?.filter((t: any) => t.status !== "completed" && t.status !== "cancelled").length || 0
             }
+            teams={d.teams ?? []}
+            members={(d.workspace_members ?? []).map((m: any) => ({
+              id: m.id,
+              role: m.role,
+              profile: m.profiles,
+            }))}
             canDelete={can(active.role, "department.delete")}
             onDelete={handleDelete}
           />

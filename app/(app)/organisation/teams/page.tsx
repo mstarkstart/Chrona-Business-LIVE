@@ -28,6 +28,20 @@ async function createTeam(formData: FormData) {
   revalidatePath("/organisation/teams");
 }
 
+async function setTeamLead(teamId: string, leadMemberId: string | null) {
+  "use server";
+  const active = await requireActiveWorkspace();
+  if (!can(active.role, "team.create")) throw new Error("Forbidden");
+
+  const supabase = await createSupabaseServerClient();
+  await supabase
+    .from("teams")
+    .update({ lead_member_id: leadMemberId || null })
+    .eq("id", teamId);
+
+  revalidatePath("/organisation/teams");
+}
+
 export default async function TeamsPage() {
   const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
@@ -39,6 +53,7 @@ export default async function TeamsPage() {
         id,
         name,
         description,
+        lead_member_id,
         departments (id, name),
         workspace_members (
           id,
@@ -139,13 +154,16 @@ export default async function TeamsPage() {
             name={t.name}
             description={t.description}
             departmentName={t.departments?.name}
+            leadMemberId={t.lead_member_id}
             members={(t.workspace_members ?? []).map((m: any) => ({
               id: m.id,
               role: m.role,
               profile: m.profiles,
             }))}
             canDelete={can(active.role, "team.delete")}
+            canManageLead={can(active.role, "team.create")}
             onDelete={handleDelete}
+            onSetLead={setTeamLead}
           />
         ))}
       </div>

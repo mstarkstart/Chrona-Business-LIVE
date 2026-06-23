@@ -13,6 +13,8 @@ import { MemberCard } from "@/components/organisation/MemberCard";
 import { BackButton } from "@/components/ui/BackButton";
 import { Users, UserPlus, Mail, Info } from "lucide-react";
 
+import { InviteSubmitButton } from "@/components/organisation/InviteSubmitButton";
+
 async function inviteMember(formData: FormData) {
   "use server";
   const user = await requireUser();
@@ -49,6 +51,17 @@ async function inviteMember(formData: FormData) {
   } catch (err) {
     console.error("[email] sendInvitationEmail failed:", err);
   }
+
+  revalidatePath("/organisation/members");
+}
+
+async function cancelInvitation(id: string) {
+  "use server";
+  const active = await requireActiveWorkspace();
+  if (!can(active.role, "member.add")) throw new Error("Forbidden");
+
+  const supabase = await createSupabaseServerClient();
+  await supabase.from("invitations").delete().eq("id", id).eq("workspace_id", active.workspace.id);
 
   revalidatePath("/organisation/members");
 }
@@ -165,11 +178,13 @@ export default async function MembersPage() {
                 </div>
                 <div className="divide-y divide-slate-100">
                   {(invites ?? []).map((i) => (
-                    <div key={i.id} className="py-2.5 first:pt-0 last:pb-0">
+                    <div key={i.id} className="py-1.5 first:pt-0 last:pb-0">
                       <InviteLinkRow
+                        id={i.id}
                         email={i.email}
-                        role={ROLE_LABEL[i.role as keyof typeof ROLE_LABEL]}
+                        role={i.role}
                         token={i.token}
+                        onCancel={cancelInvitation}
                       />
                     </div>
                   ))}
@@ -275,9 +290,7 @@ export default async function MembersPage() {
                 </select>
               </div>
 
-              <Button type="submit" className="w-full text-xs font-semibold py-2">
-                Send Invitation Link
-              </Button>
+              <InviteSubmitButton />
             </form>
           </div>
         )}
