@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
 import { ArrowRight } from "lucide-react";
 import { InteractiveBackground } from "@/components/ui/InteractiveBackground";
+import { LoginSubmitButton } from "@/components/forms/LoginSubmitButton";
 
 async function signOutAction() {
   "use server";
@@ -226,13 +227,7 @@ export default async function LoginPage({
                 </div>
               )}
 
-              <button
-                type="submit"
-                className="group w-full h-12 rounded-xl bg-primary font-semibold text-white shadow-lg glow-primary hover:scale-[1.01] active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
-              >
-                Sign in
-                <ArrowRight className="h-4 w-4 group-hover:translate-x-1 transition-transform" />
-              </button>
+              <LoginSubmitButton />
             </form>
 
             <p className="mt-6 text-center text-sm text-muted-foreground">
