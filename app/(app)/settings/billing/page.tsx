@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Check, Star, Zap, Building2, Sparkles } from "lucide-react";
+import { Check, Star, Zap, Building2, Sparkles, Brain } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 type Plan = "free" | "starter" | "pro" | "business";
@@ -61,7 +61,7 @@ const TIERS: PricingTier[] = [
       "Unlimited team members",
       "Advanced analytics & reports",
       "Automations (up to 50 rules)",
-      "AI task assistant",
+      "Chrona Nexus AI (exclusive)",
       "Custom roles & permissions",
       "API access + webhooks",
     ],
@@ -85,17 +85,24 @@ const TIERS: PricingTier[] = [
   },
 ];
 
-const FEATURE_GATE_TABLE: { feature: string; free: boolean; starter: boolean; pro: boolean; business: boolean }[] = [
-  { feature: "Task management",        free: true,  starter: true,  pro: true,  business: true  },
-  { feature: "Team members",           free: false, starter: false, pro: true,  business: true  },
-  { feature: "Task approvals",         free: false, starter: true,  pro: true,  business: true  },
-  { feature: "Calendar & scheduling",  free: false, starter: true,  pro: true,  business: true  },
-  { feature: "Automations",            free: false, starter: false, pro: true,  business: true  },
-  { feature: "AI assistant",           free: false, starter: false, pro: true,  business: true  },
-  { feature: "Advanced analytics",     free: false, starter: false, pro: true,  business: true  },
-  { feature: "API access",             free: false, starter: false, pro: true,  business: true  },
-  { feature: "SSO / SAML",             free: false, starter: false, pro: false, business: true  },
-  { feature: "Dedicated support",      free: false, starter: false, pro: false, business: true  },
+const FEATURE_GATE_TABLE: {
+  feature: string;
+  free: boolean;
+  starter: boolean;
+  pro: boolean;
+  business: boolean;
+}[] = [
+  { feature: "Task management",       free: true,  starter: true,  pro: true,  business: true  },
+  { feature: "Team members",          free: false, starter: false, pro: true,  business: true  },
+  { feature: "Task approvals",        free: false, starter: true,  pro: true,  business: true  },
+  { feature: "Calendar & scheduling", free: false, starter: true,  pro: true,  business: true  },
+  { feature: "Automations",           free: false, starter: false, pro: true,  business: true  },
+  { feature: "AI assistant",          free: false, starter: false, pro: true,  business: true  },
+  { feature: "Advanced analytics",    free: false, starter: false, pro: true,  business: true  },
+  { feature: "API access",            free: false, starter: false, pro: true,  business: true  },
+  { feature: "SSO / SAML",            free: false, starter: false, pro: false, business: true  },
+  { feature: "Dedicated support",     free: false, starter: false, pro: false, business: true  },
+  { feature: "Chrona Nexus AI",       free: false, starter: false, pro: true,  business: false },
 ];
 
 export default function BillingPage() {
@@ -103,19 +110,25 @@ export default function BillingPage() {
   const [toast, setToast] = useState<string | null>(null);
 
   function handleUpgrade(plan: Plan) {
-    setToast(`${plan.charAt(0).toUpperCase() + plan.slice(1)} plan — Coming Soon! Billing is not yet active.`);
+    setToast(
+      `${plan.charAt(0).toUpperCase() + plan.slice(1)} plan — Coming Soon! Billing is not yet active.`
+    );
     setTimeout(() => setToast(null), 4000);
   }
 
   return (
-    <div className="p-6 space-y-10 max-w-5xl">
+    <div className="p-6 space-y-10 max-w-5xl mx-auto animate-fade-up">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-semibold text-gray-900">Billing &amp; Plan</h1>
-        <p className="mt-1 text-sm text-gray-500">
+        <h1 className="text-2xl font-bold tracking-tight gradient-text inline-block">
+          Billing &amp; Plan
+        </h1>
+        <p className="mt-1 text-sm" style={{ color: "var(--text-secondary)" }}>
           You are currently on the{" "}
-          <span className="font-medium text-gray-700">Free plan</span>. Upgrade
-          anytime to unlock more features.
+          <span className="font-semibold" style={{ color: "var(--text-primary)" }}>
+            Free plan
+          </span>
+          . Upgrade anytime to unlock more features.
         </p>
       </div>
 
@@ -127,55 +140,217 @@ export default function BillingPage() {
       )}
 
       {/* Pricing grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5 items-stretch">
         {TIERS.map((tier) => {
           const isCurrent = tier.id === currentPlan;
           const isPopular = tier.popular;
 
-          return (
-            <div
-              key={tier.id}
-              className={`relative flex flex-col bg-white rounded-2xl border shadow-sm transition-all ${
-                isPopular
-                  ? "border-indigo-500 ring-2 ring-indigo-500 shadow-indigo-100"
-                  : "border-gray-200 hover:border-indigo-200 hover:shadow-md"
-              }`}
-            >
-              {/* Popular badge */}
-              {isPopular && (
-                <div className="absolute -top-3 left-1/2 -translate-x-1/2">
-                  <span className="inline-flex items-center gap-1 bg-indigo-600 text-white text-xs font-semibold px-3 py-1 rounded-full shadow">
-                    <Star size={10} />
+          if (isPopular) {
+            return (
+              <div
+                key={tier.id}
+                className="relative p-px rounded-[18px] flex flex-col"
+                style={{
+                  background:
+                    "linear-gradient(135deg, #4338ca 0%, #6366f1 30%, #8b5cf6 60%, #6366f1 85%, #4338ca 100%)",
+                  boxShadow:
+                    "0 8px 32px rgba(99,102,241,0.28), 0 2px 8px rgba(99,102,241,0.18)",
+                }}
+              >
+                {/* Popular badge */}
+                <div className="absolute -top-3.5 left-1/2 -translate-x-1/2 z-10">
+                  <span
+                    className="inline-flex items-center gap-1.5 text-white text-[10px] font-bold px-3 py-1 rounded-full shadow-lg"
+                    style={{
+                      background:
+                        "linear-gradient(120deg, #4338ca 0%, #6366f1 50%, #8b5cf6 100%)",
+                      boxShadow: "0 2px 12px rgba(99,102,241,0.40)",
+                    }}
+                  >
+                    <Star size={9} fill="currentColor" />
                     Most Popular
                   </span>
                 </div>
-              )}
 
+                <div
+                  className="relative flex flex-col rounded-[17px] flex-1"
+                  style={{
+                    background: "rgba(255,255,255,0.78)",
+                    backdropFilter: "blur(20px)",
+                    WebkitBackdropFilter: "blur(20px)",
+                  }}
+                >
+                  <div className="p-5 flex-1 space-y-4">
+                    {/* Icon + name */}
+                    <div className="flex items-center gap-2">
+                      <span
+                        className="flex h-9 w-9 items-center justify-center rounded-xl"
+                        style={{
+                          background:
+                            "linear-gradient(135deg, rgba(99,102,241,0.15) 0%, rgba(139,92,246,0.15) 100%)",
+                          border: "1px solid rgba(99,102,241,0.25)",
+                        }}
+                      >
+                        <Star size={20} className="text-indigo-600" />
+                      </span>
+                      <span
+                        className="text-sm font-semibold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {tier.name}
+                      </span>
+                    </div>
+
+                    {/* Price */}
+                    <div>
+                      <span
+                        className="text-3xl font-bold"
+                        style={{ color: "var(--text-primary)" }}
+                      >
+                        {tier.price}
+                      </span>
+                      <span
+                        className="text-xs ml-1"
+                        style={{ color: "var(--text-muted)" }}
+                      >
+                        {tier.priceDetail}
+                      </span>
+                    </div>
+
+                    <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                      {tier.description}
+                    </p>
+
+                    {/* Nexus AI badge */}
+                    <div
+                      className="rounded-xl px-3 py-2.5 flex items-center gap-2.5"
+                      style={{
+                        background:
+                          "linear-gradient(120deg, rgba(67,56,202,0.10) 0%, rgba(139,92,246,0.14) 100%)",
+                        border: "1px solid rgba(99,102,241,0.30)",
+                      }}
+                    >
+                      <span
+                        className="flex h-7 w-7 shrink-0 items-center justify-center rounded-lg"
+                        style={{
+                          background: "linear-gradient(135deg, #4338ca, #8b5cf6)",
+                          boxShadow: "0 2px 8px rgba(99,102,241,0.35)",
+                        }}
+                      >
+                        <Brain size={14} className="text-white" />
+                      </span>
+                      <div className="min-w-0 flex-1">
+                        <p
+                          className="text-[10px] font-black uppercase tracking-widest"
+                          style={{
+                            background:
+                              "linear-gradient(120deg, #4338ca 0%, #6366f1 50%, #8b5cf6 100%)",
+                            WebkitBackgroundClip: "text",
+                            WebkitTextFillColor: "transparent",
+                            backgroundClip: "text",
+                          }}
+                        >
+                          Chrona Nexus AI
+                        </p>
+                        <p
+                          className="text-[10px] leading-tight mt-0.5"
+                          style={{ color: "var(--text-muted)" }}
+                        >
+                          Exclusive AI workspace intelligence
+                        </p>
+                      </div>
+                      <span
+                        className="ml-auto shrink-0 text-[9px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-md text-white"
+                        style={{
+                          background: "linear-gradient(120deg, #4338ca, #8b5cf6)",
+                        }}
+                      >
+                        Pro Only
+                      </span>
+                    </div>
+
+                    {/* Features */}
+                    <ul className="space-y-2">
+                      {tier.features.map((f) => (
+                        <li
+                          key={f}
+                          className="flex items-start gap-2 text-xs"
+                          style={{ color: "var(--text-body)" }}
+                        >
+                          <Check size={13} className="mt-0.5 shrink-0 text-indigo-500" />
+                          {f}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  {/* CTA */}
+                  <div className="p-5 pt-0">
+                    <Button
+                      onClick={() => handleUpgrade(tier.id)}
+                      className="w-full text-xs text-white border-0 shadow-lg hover:brightness-110 active:scale-[0.97]"
+                      style={{
+                        background:
+                          "linear-gradient(120deg, #4338ca 0%, #6366f1 50%, #8b5cf6 100%)",
+                        boxShadow: "0 4px 14px rgba(99,102,241,0.35)",
+                      }}
+                      size="sm"
+                    >
+                      Upgrade to {tier.name}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            );
+          }
+
+          return (
+            <div
+              key={tier.id}
+              className="relative flex flex-col glass-card rounded-2xl"
+            >
               <div className="p-5 flex-1 space-y-4">
                 {/* Icon + name */}
                 <div className="flex items-center gap-2">
-                  <span
-                    className={`flex h-8 w-8 items-center justify-center rounded-lg ${
-                      isPopular ? "bg-indigo-50" : "bg-gray-100"
-                    }`}
-                  >
+                  <span className="flex h-8 w-8 items-center justify-center rounded-lg bg-white/60">
                     {tier.icon}
                   </span>
-                  <span className="text-sm font-semibold text-gray-900">{tier.name}</span>
+                  <span
+                    className="text-sm font-semibold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {tier.name}
+                  </span>
                 </div>
 
                 {/* Price */}
                 <div>
-                  <span className="text-3xl font-bold text-gray-900">{tier.price}</span>
-                  <span className="text-xs text-gray-400 ml-1">{tier.priceDetail}</span>
+                  <span
+                    className="text-3xl font-bold"
+                    style={{ color: "var(--text-primary)" }}
+                  >
+                    {tier.price}
+                  </span>
+                  <span
+                    className="text-xs ml-1"
+                    style={{ color: "var(--text-muted)" }}
+                  >
+                    {tier.priceDetail}
+                  </span>
                 </div>
 
-                <p className="text-xs text-gray-500">{tier.description}</p>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  {tier.description}
+                </p>
 
                 {/* Features */}
                 <ul className="space-y-2">
                   {tier.features.map((f) => (
-                    <li key={f} className="flex items-start gap-2 text-xs text-gray-600">
+                    <li
+                      key={f}
+                      className="flex items-start gap-2 text-xs"
+                      style={{ color: "var(--text-body)" }}
+                    >
                       <Check size={13} className="mt-0.5 shrink-0 text-indigo-500" />
                       {f}
                     </li>
@@ -186,13 +361,20 @@ export default function BillingPage() {
               {/* CTA */}
               <div className="p-5 pt-0">
                 {isCurrent ? (
-                  <div className="w-full text-center rounded-lg bg-gray-100 py-2 text-xs font-medium text-gray-500">
+                  <div
+                    className="w-full text-center rounded-lg py-2 text-xs font-medium"
+                    style={{
+                      background: "rgba(255,255,255,0.50)",
+                      border: "1px solid rgba(255,255,255,0.70)",
+                      color: "var(--text-muted)",
+                    }}
+                  >
                     Current Plan
                   </div>
                 ) : (
                   <Button
                     onClick={() => handleUpgrade(tier.id)}
-                    variant={isPopular ? "default" : "outline"}
+                    variant="outline"
                     className="w-full text-xs"
                     size="sm"
                   >
@@ -207,20 +389,45 @@ export default function BillingPage() {
 
       {/* Feature gating table */}
       <div className="space-y-3">
-        <h2 className="text-sm font-semibold text-gray-700">Feature availability by plan</h2>
-        <div className="overflow-x-auto rounded-xl border border-gray-200 shadow-sm">
+        <h2
+          className="text-sm font-semibold"
+          style={{ color: "var(--text-primary)" }}
+        >
+          Feature availability by plan
+        </h2>
+        <div
+          className="overflow-x-auto rounded-2xl"
+          style={{
+            background: "rgba(255,255,255,0.45)",
+            backdropFilter: "blur(16px)",
+            WebkitBackdropFilter: "blur(16px)",
+            border: "1px solid rgba(255,255,255,0.50)",
+            boxShadow:
+              "0 2px 16px rgba(100,140,180,0.12), inset 0 1px 0 rgba(255,255,255,0.80)",
+          }}
+        >
           <table className="w-full text-sm">
             <thead>
-              <tr className="bg-gray-50 border-b border-gray-200">
-                <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 w-1/2">
+              <tr
+                className="border-b"
+                style={{
+                  background: "rgba(255,255,255,0.30)",
+                  borderColor: "rgba(200,220,235,0.60)",
+                }}
+              >
+                <th
+                  className="text-left px-4 py-3 text-xs font-semibold w-1/2"
+                  style={{ color: "var(--text-secondary)" }}
+                >
                   Feature
                 </th>
                 {(["Free", "Starter", "Pro", "Business"] as const).map((h) => (
                   <th
                     key={h}
                     className={`text-center px-3 py-3 text-xs font-semibold ${
-                      h === "Pro" ? "text-indigo-600" : "text-gray-500"
+                      h === "Pro" ? "text-indigo-600" : ""
                     }`}
+                    style={h !== "Pro" ? { color: "var(--text-muted)" } : {}}
                   >
                     {h}
                   </th>
@@ -228,57 +435,102 @@ export default function BillingPage() {
               </tr>
             </thead>
             <tbody>
-              {FEATURE_GATE_TABLE.map((row, i) => (
-                <tr
-                  key={row.feature}
-                  className={`border-b border-gray-100 last:border-0 ${
-                    i % 2 === 0 ? "bg-white" : "bg-gray-50/50"
-                  }`}
-                >
-                  <td className="px-4 py-2.5 text-xs text-gray-700 font-medium">
-                    {row.feature}
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <PlanCheck checked={row.free} />
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <PlanCheck checked={row.starter} />
-                  </td>
-                  <td className="px-3 py-2.5 text-center bg-indigo-50/30">
-                    <PlanCheck checked={row.pro} highlight />
-                  </td>
-                  <td className="px-3 py-2.5 text-center">
-                    <PlanCheck checked={row.business} />
-                  </td>
-                </tr>
-              ))}
+              {FEATURE_GATE_TABLE.map((row, i) => {
+                const isNexusRow = row.feature === "Chrona Nexus AI";
+                return (
+                  <tr
+                    key={row.feature}
+                    className="border-b last:border-0"
+                    style={{
+                      background: isNexusRow
+                        ? "linear-gradient(120deg, rgba(67,56,202,0.06) 0%, rgba(139,92,246,0.08) 100%)"
+                        : i % 2 === 0
+                        ? "rgba(255,255,255,0.28)"
+                        : "rgba(255,255,255,0.15)",
+                      borderColor: isNexusRow
+                        ? "rgba(99,102,241,0.20)"
+                        : "rgba(200,220,235,0.40)",
+                    }}
+                  >
+                    <td
+                      className="px-4 py-2.5 text-xs font-medium"
+                      style={{ color: "var(--text-body)" }}
+                    >
+                      {isNexusRow ? (
+                        <span className="flex items-center gap-1.5">
+                          <Brain size={12} className="text-indigo-500 shrink-0" />
+                          <span className="gradient-text font-semibold">
+                            {row.feature}
+                          </span>
+                        </span>
+                      ) : (
+                        row.feature
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <PlanCheck checked={row.free} />
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <PlanCheck checked={row.starter} />
+                    </td>
+                    <td
+                      className="px-3 py-2.5 text-center"
+                      style={{ background: "rgba(99,102,241,0.06)" }}
+                    >
+                      {isNexusRow ? (
+                        <span className="inline-flex justify-center">
+                          <Star
+                            size={13}
+                            className="text-indigo-600"
+                            fill="currentColor"
+                          />
+                        </span>
+                      ) : (
+                        <PlanCheck checked={row.pro} highlight />
+                      )}
+                    </td>
+                    <td className="px-3 py-2.5 text-center">
+                      <PlanCheck checked={row.business} />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
       {/* Billing footer note */}
-      <p className="text-xs text-gray-400 pb-4">
-        All prices are in USD. Billing is billed monthly per active user.
-        Upgrade or downgrade at any time — changes apply from the next billing cycle.
+      <p className="text-xs pb-4" style={{ color: "var(--text-muted)" }}>
+        All prices are in USD. Billing is billed monthly per active user. Upgrade
+        or downgrade at any time — changes apply from the next billing cycle.
         Payment processing coming soon.
       </p>
     </div>
   );
 }
 
-function PlanCheck({ checked, highlight }: { checked: boolean; highlight?: boolean }) {
+function PlanCheck({
+  checked,
+  highlight,
+}: {
+  checked: boolean;
+  highlight?: boolean;
+}) {
   if (checked) {
     return (
       <span className="inline-flex justify-center">
         <Check
           size={14}
-          className={highlight ? "text-indigo-600" : "text-green-500"}
+          className={highlight ? "text-indigo-600" : "text-[#34C98A]"}
         />
       </span>
     );
   }
   return (
-    <span className="inline-block w-3 h-0.5 bg-gray-200 rounded mx-auto" />
+    <span
+      className="inline-block w-3 h-0.5 rounded mx-auto"
+      style={{ background: "rgba(200,220,235,0.80)" }}
+    />
   );
 }

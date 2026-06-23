@@ -29,7 +29,12 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
       suppressHydrationWarning
     >
-      <body className="min-h-full" suppressHydrationWarning>{children}</body>
+      <body className="min-h-full" suppressHydrationWarning>
+        <div className="chrona-bg" aria-hidden="true">
+          <span className="blob-3" />
+        </div>
+        {children}
+      </body>
     </html>
   );
 }

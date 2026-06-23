@@ -13,9 +13,18 @@ type ActionDef = {
   color?: string;
 };
 
+const NexusLogoIcon = ({ className, style }: { className?: string; style?: React.CSSProperties }) => (
+  <img
+    src="/nexus-logo.png"
+    alt="Chrona Nexus"
+    className={className}
+    style={{ ...style, objectFit: "contain" }}
+  />
+);
+
 const ACTIONS: Record<string, ActionDef> = {
   "task.create":     { label: "Create Task",            icon: ClipboardCheck, href: "/tasks?new=1",         color: "#6366f1" },
-  "ai.chat":         { label: "Chrona Nexus",              icon: Sparkles,                                     color: "#a78bfa" },
+  "ai.chat":         { label: "Chrona Nexus",           icon: NexusLogoIcon,                                color: "#a78bfa" },
   "report.generate": { label: "Workload Reports",       icon: FileBarChart,   comingSoon: true,             color: "#818cf8" },
   "calendar.new":    { label: "Schedule Event",         icon: CalendarPlus,   href: "/calendar",            color: "#34d399" },
   "member.invite":   { label: "Invite Teammate",        icon: UserPlus,       href: "/organisation/members",color: "#fb923c" },
@@ -72,8 +81,8 @@ export function MultiFunctionButton({ actions, workspaceId }: { actions: string[
                 const Icon = def.icon;
                 const content = (
                   <div
-                    className="flex items-center gap-3 rounded-2xl border border-border bg-white/95 px-4 py-3 shadow-2xl text-sm font-semibold text-foreground hover:bg-indigo-50/50 hover:text-indigo-600 transition-all animate-fade-up cursor-pointer backdrop-blur-md border-r-4"
-                    style={{ animationDelay: `${i * 30}ms`, borderRightColor: def.color }}
+                    className="flex items-center gap-3 rounded-[14px] bg-[rgba(255,255,255,0.60)] backdrop-blur-[20px] border border-white/70 border-r-[3px] px-4 py-3 shadow-[0_3px_16px_rgba(80,120,160,0.14),inset_0_1px_0_rgba(255,255,255,0.85)] text-[14px] font-semibold text-[#1E2D3D] hover:bg-white/78 hover:border-white/88 hover:-translate-y-[1px] active:scale-[0.96] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] btn-press cursor-pointer"
+                    style={{ animation: `glass-appear 280ms cubic-bezier(0.22,1,0.36,1) ${i * 50}ms both`, borderRightColor: def.color }}
                     onClick={() => pick(key)}
                   >
                     <div className="h-7 w-7 rounded-xl flex items-center justify-center" style={{ background: `${def.color}15` }}>
@@ -97,19 +106,18 @@ export function MultiFunctionButton({ actions, workspaceId }: { actions: string[
           {/* Main FAB */}
           <button
             onClick={() => setOpen((o) => !o)}
-            className={`h-12 w-12 rounded-2xl flex items-center justify-center shadow-xl transition-all active:scale-90 relative cursor-pointer ${
+            className={`h-12 w-12 rounded-full flex items-center justify-center btn-press shadow-[0_6px_20px_rgba(80,120,160,0.22),inset_0_1px_0_rgba(255,255,255,0.85)] hover:scale-[1.07] hover:shadow-[0_8px_26px_rgba(80,120,160,0.30)] active:scale-[0.93] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative cursor-pointer ${
               open
-                ? "bg-card border border-border text-foreground hover:bg-slate-100"
-                : "bg-primary text-white border border-indigo-500/20 hover:brightness-105"
+                ? "bg-[rgba(255,255,255,0.80)] border-white/88 text-[#4A90D4] scale-[1.04]"
+                : "bg-[rgba(255,255,255,0.55)] backdrop-blur-[16px] border border-white/72 text-[#1E2D3D] hover:bg-white/72"
             }`}
           >
-            {open ? <X className="h-5 w-5" /> : (
+            {open ? <X className="h-5 w-5" style={{ transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)', transform: 'rotate(45deg)' }} /> : (
               <>
-                <Plus className="h-5 w-5" />
+                <Plus className="h-5 w-5" style={{ transition: 'transform 220ms cubic-bezier(0.34,1.56,0.64,1)', transform: 'rotate(0deg)' }} />
                 {/* Pulse notification dot for AI assistant */}
-                <span className="absolute -top-1 -right-1 flex h-3.5 w-3.5">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-violet-400 opacity-75"></span>
-                  <span className="relative inline-flex rounded-full h-3.5 w-3.5 bg-violet-500 border-2 border-white"></span>
+                <span className="absolute -top-1 -right-1 flex h-3 w-3">
+                  <span className="relative inline-flex rounded-full h-3 w-3 bg-[#E85050] shadow-[0_0_8px_rgba(232,80,80,0.55)] animate-[badge-pulse_2s_ease-in-out_infinite]" />
                 </span>
               </>
             )}

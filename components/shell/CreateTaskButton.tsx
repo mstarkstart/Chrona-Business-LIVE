@@ -4,7 +4,8 @@ import { useState, useTransition, useEffect } from "react";
 import { Plus, X, Calendar, Clock } from "lucide-react";
 import { supabase } from "@/lib/supabase/client";
 import { useRouter } from "next/navigation";
-import { syncTaskCalendarEventAction } from "@/lib/tasks/mutations";
+import { createTask } from "@/lib/tasks/mutations";
+import { createPortal } from "react-dom";
 
 type Member = { id: string; name: string; userId: string };
 
@@ -68,9 +69,11 @@ export function CreateTaskButton({
   const [error, setError] = useState<string | null>(null);
   const [priority, setPriority] = useState("normal");
   const [currentUserId, setCurrentUserId] = useState<string | null>(null);
+  const [mounted, setMounted] = useState(false);
   const router = useRouter();
 
   useEffect(() => {
+    setMounted(true);
     supabase.auth.getUser().then(({ data }) => {
       if (data.user) {
         setCurrentUserId(data.user.id);
@@ -112,47 +115,23 @@ export function CreateTaskButton({
 
     startTransition(async () => {
       setError(null);
-      const { data: user } = await supabase.auth.getUser();
-      if (!user.user) return;
 
-      const newStatus = assigned_to ? "awaiting_acceptance" : "pending";
+      const taskForm = new FormData();
+      taskForm.set("title", title);
+      if (description) taskForm.set("description", description);
+      if (assigned_to) taskForm.set("assigned_to", assigned_to);
+      if (due_date) taskForm.set("due_date", due_date);
+      if (start_at) taskForm.set("start_at", start_at);
+      if (requires_approval) taskForm.set("requires_approval", "on");
 
-      const { data: task, error: err } = await supabase.from("tasks").insert({
-        workspace_id: businessId,
-        title,
-        description: description || null,
-        priority: "normal", // Forced default to Normal
-        status: newStatus,
-        assigned_to,
-        due_date,
-        start_at,
-        requires_approval,
-        created_by: user.user.id,
-      }).select().single();
-
-      if (err) { setError(err.message); return; }
-
-      if (task) {
-        await syncTaskCalendarEventAction(task.id);
+      try {
+        await createTask(taskForm);
+        handleClose();
+        router.refresh();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : "Could not create task.";
+        setError(message);
       }
-
-      if (assigned_to && task) {
-        await fetch("/api/notifications/create", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            userId: assigned_to,
-            businessId,
-            type: "task_assignment",
-            title: `You've been assigned: ${title}`,
-            body: description || null,
-            taskId: task.id,
-          }),
-        });
-      }
-
-      handleClose();
-      router.refresh();
     });
   }
 
@@ -176,7 +155,7 @@ export function CreateTaskButton({
         </button>
       )}
 
-      {open && (
+      {open && mounted && createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
           <div className="absolute inset-0 bg-black/25 backdrop-blur-sm" onClick={handleClose} />
 
@@ -293,7 +272,8 @@ export function CreateTaskButton({
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
     </>
   );

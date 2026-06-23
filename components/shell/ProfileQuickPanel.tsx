@@ -75,7 +75,7 @@ export function ProfileQuickPanel({ userName, workspaceName, userRole, avatarUrl
   return (
     <div
       ref={panelRef}
-      className="absolute bottom-full left-2 right-2 mb-2 rounded-2xl border border-border bg-popover shadow-2xl overflow-hidden z-50 animate-fade-up"
+      className="absolute bottom-full left-2 right-2 mb-2 rounded-2xl border border-white/60 bg-[rgba(255,255,255,0.95)] backdrop-blur-[24px] shadow-[0_12px_40px_-8px_rgba(30,45,61,0.25)] overflow-hidden z-50 animate-fade-up"
       style={{ animationDuration: "0.18s" }}
     >
       {/* Avatar + name */}

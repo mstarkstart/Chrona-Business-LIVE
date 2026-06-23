@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { ArrowRight, Sparkles, Zap, ShieldCheck, Calendar, Users, BarChart3, CheckCircle2, Clock } from "lucide-react";
+import { ArrowRight, Sparkles, Zap, ShieldCheck, Calendar, Users, CheckCircle2, Clock } from "lucide-react";
 import { HeroMockup } from "@/components/marketing/HeroMockup";
 import { LiveTicker } from "@/components/marketing/LiveTicker";
 import { AnimatedCounter } from "@/components/marketing/AnimatedCounter";
@@ -12,7 +12,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* HERO                                                                  */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative bg-mesh">
+      <section className="relative bg-transparent">
         {/* Decorative orbs */}
         <div className="pointer-events-none absolute inset-0 overflow-hidden">
           <div className="absolute -top-32 -left-32 w-[500px] h-[500px] rounded-full opacity-60 blur-3xl animate-blob"
@@ -44,7 +44,7 @@ export default function LandingPage() {
               <span className="gradient-text">in one place.</span>
             </h1>
 
-            <p className="animate-fade-up delay-200 mt-8 text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto leading-relaxed">
+            <p className="animate-fade-up delay-200 mt-8 text-lg md:text-xl text-[#344B63] font-medium max-w-2xl mx-auto leading-relaxed drop-shadow-sm">
               Tasks, calendar, dashboards, real-time activity, role-based access — all in one beautifully crafted system that adapts to every person in your company.
             </p>
 
@@ -66,10 +66,10 @@ export default function LandingPage() {
             </div>
 
             {/* Trust line */}
-            <p className="animate-fade-up delay-400 mt-6 text-sm text-muted-foreground">
-              <span className="text-emerald-600 font-semibold">✓</span> No credit card{"  "}·{"  "}
-              <span className="text-emerald-600 font-semibold">✓</span> Quick setup{"  "}·{"  "}
-              <span className="text-emerald-600 font-semibold">✓</span> Cancel anytime
+            <p className="animate-fade-up delay-400 mt-6 text-sm text-[#344B63] font-medium">
+              <span className="text-emerald-600 font-bold">✓</span> No credit card{"  "}·{"  "}
+              <span className="text-emerald-600 font-bold">✓</span> Quick setup{"  "}·{"  "}
+              <span className="text-emerald-600 font-bold">✓</span> Cancel anytime
             </p>
 
             {/* Mockup */}
@@ -122,7 +122,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* STATS BAR                                                             */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="relative py-20 px-6 border-y border-border bg-white/50">
+      <section className="relative py-20 px-6 border-y border-white/20 bg-transparent">
         <div className="mx-auto max-w-5xl grid grid-cols-2 md:grid-cols-4 gap-8">
           {[
             { value: 5, suffix: "", label: "role tiers", color: "#4f46e5" },
@@ -143,7 +143,7 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* ROLE EXPLORER                                                         */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6 bg-mesh relative overflow-hidden">
+      <section className="py-32 px-6 bg-transparent relative overflow-hidden">
         <div className="absolute -top-40 right-0 w-[500px] h-[500px] rounded-full opacity-30 blur-3xl"
           style={{ background: "radial-gradient(circle, rgba(99,102,241,0.15), transparent 70%)" }} />
 
@@ -157,7 +157,7 @@ export default function LandingPage() {
               One product.{" "}
               <span className="gradient-text">Different shape for everyone.</span>
             </h2>
-            <p className="mt-4 text-lg text-muted-foreground max-w-2xl mx-auto">
+            <p className="mt-4 text-lg text-[#344B63] font-medium max-w-2xl mx-auto drop-shadow-sm">
               From founder to employee — each person sees exactly what their role demands. No clutter, no information overload, no permission tickets.
             </p>
           </div>
@@ -185,7 +185,7 @@ export default function LandingPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
 
             {/* Tasks — large */}
-            <div className="md:col-span-2 group rounded-3xl border border-border bg-white p-8 card-soft overflow-hidden relative">
+            <div className="md:col-span-2 group rounded-3xl border border-white/40 bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.90)] p-8 card-soft overflow-hidden relative">
               <div className="absolute -bottom-10 -right-10 w-64 h-64 rounded-full bg-indigo-50 blur-3xl opacity-60" />
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
@@ -216,7 +216,7 @@ export default function LandingPage() {
             </div>
 
             {/* Calendar */}
-            <div className="rounded-3xl border border-border bg-white p-8 card-soft overflow-hidden relative">
+            <div className="rounded-3xl border border-white/40 bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.90)] p-8 card-soft overflow-hidden relative">
               <div className="absolute -bottom-10 -right-10 w-48 h-48 rounded-full bg-rose-50 blur-3xl opacity-60" />
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
@@ -255,7 +255,7 @@ export default function LandingPage() {
             </div>
 
             {/* Real-time activity */}
-            <div className="rounded-3xl border border-border bg-white p-8 card-soft overflow-hidden relative">
+            <div className="rounded-3xl border border-white/40 bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.90)] p-8 card-soft overflow-hidden relative">
               <div className="absolute -bottom-10 -left-10 w-48 h-48 rounded-full bg-emerald-50 blur-3xl opacity-60" />
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
@@ -290,7 +290,7 @@ export default function LandingPage() {
             </div>
 
             {/* Approvals — wider */}
-            <div className="md:col-span-2 rounded-3xl border border-border bg-gradient-to-br from-violet-50 via-white to-indigo-50/50 p-8 card-soft overflow-hidden relative">
+            <div className="md:col-span-2 rounded-3xl border border-white/40 bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.90)] p-8 card-soft overflow-hidden relative">
               <div className="relative">
                 <div className="flex items-center gap-3 mb-4">
                   <div className="h-10 w-10 rounded-xl bg-violet-100 flex items-center justify-center">
@@ -343,7 +343,7 @@ export default function LandingPage() {
                 See your team{" "}
                 <span className="gradient-text">work in real time.</span>
               </h2>
-              <p className="text-lg text-muted-foreground mb-8">
+              <p className="text-lg text-[#344B63] font-medium mb-8 drop-shadow-sm">
                 Status changes, task progress, approvals, calendar updates — every event broadcasts to everyone who needs to see it. Instantly.
               </p>
               <ul className="space-y-3">
@@ -357,7 +357,7 @@ export default function LandingPage() {
                     <div className="h-5 w-5 rounded-full bg-emerald-100 flex items-center justify-center shrink-0 mt-0.5">
                       <div className="h-1.5 w-1.5 rounded-full bg-emerald-500" />
                     </div>
-                    <span className="text-sm">{item}</span>
+                    <span className="text-sm text-[#1E2D3D] font-medium">{item}</span>
                   </li>
                 ))}
               </ul>
@@ -365,8 +365,8 @@ export default function LandingPage() {
 
             <div className="relative">
               <div className="absolute -inset-4 rounded-3xl bg-gradient-to-br from-indigo-100/40 via-violet-100/40 to-rose-100/40 blur-2xl" />
-              <div className="relative rounded-3xl border border-border bg-white p-6 shadow-2xl shadow-indigo-100">
-                <div className="flex items-center justify-between mb-4 pb-4 border-b border-border">
+              <div className="relative rounded-3xl border border-white/40 bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] shadow-[inset_0_1px_0_rgba(255,255,255,0.90)] p-6 shadow-2xl shadow-indigo-100/30">
+                <div className="flex items-center justify-between mb-4 pb-4 border-b border-border/40">
                   <div>
                     <div className="text-sm font-bold">Live activity feed</div>
                     <div className="text-xs text-muted-foreground">Pixelforge Studio</div>
@@ -389,16 +389,17 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* QUOTE                                                                 */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <section className="py-32 px-6 bg-gradient-to-br from-indigo-50/40 via-white to-rose-50/40">
-        <div className="mx-auto max-w-3xl text-center">
+      <section className="py-32 px-6 relative overflow-hidden">
+        <div className="absolute inset-0 bg-white/40 backdrop-blur-xl" />
+        <div className="mx-auto max-w-3xl text-center relative z-10">
           <div className="text-6xl text-indigo-600 mb-6 leading-none">&ldquo;</div>
-          <p className="text-3xl md:text-4xl font-bold tracking-tighter leading-tight mb-8">
+          <p className="text-3xl md:text-4xl font-bold tracking-tighter text-[#1E2D3D] leading-tight mb-8">
             Leaders see everything,<br />
             managers see what they need to lead,<br />
             and employees see what they need to execute.
           </p>
-          <p className="text-base text-muted-foreground">
-            <span className="font-semibold text-foreground">The Chrona principle</span>
+          <p className="text-base text-[#344B63] font-medium">
+            <span className="font-bold text-[#1E2D3D]">The Chrona principle</span>
             {" "}— and the foundation of how this product was built.
           </p>
         </div>
@@ -455,17 +456,15 @@ export default function LandingPage() {
       {/* ═══════════════════════════════════════════════════════════════════ */}
       {/* FOOTER                                                                */}
       {/* ═══════════════════════════════════════════════════════════════════ */}
-      <footer className="border-t border-border py-16 px-6">
+      <footer className="border-t border-white/40 py-16 px-6 bg-[rgba(255,255,255,0.4)] backdrop-blur-xl relative z-10 shadow-[0_-4px_30px_rgba(0,0,0,0.02)]">
         <div className="mx-auto max-w-6xl">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8 mb-12">
             <div className="md:col-span-2">
               <Link href="/" className="flex items-center gap-2.5 font-bold text-lg tracking-tight mb-4">
-                <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-md shadow-indigo-500/30">
-                  <BarChart3 className="h-4 w-4 text-white" />
-                </div>
+                <img src="/chrona-logo.png" alt="Chrona Logo" className="h-8 w-8 object-contain" />
                 <span>Chrona <span className="gradient-text">Business</span></span>
               </Link>
-              <p className="text-sm text-muted-foreground max-w-md">
+              <p className="text-sm text-[#344B63] font-medium max-w-md">
                 An all-in-one workforce platform that gives every role in a company exactly the tools, visibility, and access they need.
               </p>
             </div>
@@ -485,9 +484,9 @@ export default function LandingPage() {
               </ul>
             </div>
           </div>
-          <div className="pt-8 border-t border-border flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-muted-foreground">
+          <div className="pt-8 border-t border-white/40 flex flex-col sm:flex-row items-center justify-between gap-3 text-sm text-[#344B63] font-medium">
             <p>© {new Date().getFullYear()} Chrona Business. Built for modern workforces.</p>
-            <p className="font-mono text-xs">v1.0.0</p>
+            <p className="font-mono text-xs text-[#40566E]">v1.0.0</p>
           </div>
         </div>
       </footer>

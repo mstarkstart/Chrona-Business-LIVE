@@ -15,10 +15,12 @@ export function ActivityStatusPicker({
   businessMemberId,
   initial,
   updatedAt,
+  onOptimisticUpdate,
 }: {
   businessMemberId: string;
   initial: ActivityStatus;
   updatedAt?: string | null;
+  onOptimisticUpdate?: (status: ActivityStatus) => void;
 }) {
   const [status, setStatus] = useState<ActivityStatus>(initial);
   const [open, setOpen] = useState(false);
@@ -29,7 +31,8 @@ export function ActivityStatusPicker({
   void businessMemberId;
 
   async function pick(next: ActivityStatus) {
-    setStatus(next); // optimistic update
+    setStatus(next); // optimistic update internal
+    onOptimisticUpdate?.(next); // optimistic update parent
     setOpen(false);
     setPending(true);
     try {
@@ -40,6 +43,7 @@ export function ActivityStatusPicker({
       console.error("[ActivityStatusPicker] status update failed:", err);
       // Revert optimistic update on failure
       setStatus(status);
+      onOptimisticUpdate?.(status);
     } finally {
       setPending(false);
     }
@@ -50,30 +54,32 @@ export function ActivityStatusPicker({
       <button
         onClick={() => setOpen((o) => !o)}
         disabled={pending}
-        className="w-full flex items-center gap-2.5 rounded-xl border border-border bg-muted/40 px-3 py-2.5 text-sm hover:bg-accent transition-all disabled:opacity-60"
+        className="w-full flex items-center gap-2.5 rounded-xl border border-white/15 bg-[rgba(18,18,28,0.42)] backdrop-blur-[16px] px-3 py-2.5 text-sm hover:bg-[rgba(18,18,28,0.55)] transition-all disabled:opacity-60 shadow-[0_2px_12px_rgba(0,0,0,0.20),inset_0_1px_0_rgba(255,255,255,0.10)]"
       >
         <span
           className="h-2.5 w-2.5 rounded-full shrink-0 relative"
           style={{ background: STATUS_COLOUR[status], boxShadow: `0 0 8px ${STATUS_COLOUR[status]}` }}
         />
-        <span className="font-medium flex-1 text-left flex items-center gap-2">
+        <span className="font-medium flex-1 text-left flex items-center gap-2 text-white/90">
           {STATUS_LABEL[status]}
-          <span className="text-[10px] text-muted-foreground font-normal">
+          <span className="text-[10px] text-white/40 font-normal">
             ⏱️ <TimeAgo dateString={updatedAt} />
           </span>
         </span>
         <span className="text-base leading-none mr-1">{STATUS_EMOJI[status]}</span>
-        {pending && <span className="ml-1 text-[10px] text-muted-foreground">(saving…)</span>}
-        <ChevronDown className={`shrink-0 ml-auto h-3.5 w-3.5 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`} />
+        {pending && <span className="ml-1 text-[10px] text-white/40">(saving…)</span>}
+        <ChevronDown className={`shrink-0 ml-auto h-3.5 w-3.5 text-white/40 transition-transform ${open ? "rotate-180" : ""}`} />
       </button>
 
       {open && (
-        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl border border-border bg-popover shadow-xl overflow-hidden animate-fade-in">
+        <div className="absolute top-full left-0 right-0 mt-1.5 z-50 rounded-xl border border-white/15 bg-[rgba(18,18,28,0.55)] backdrop-blur-[32px] shadow-[0_16px_48px_rgba(0,0,0,0.35),0_0_0_1px_rgba(255,255,255,0.09)_inset] overflow-hidden animate-fade-in">
           {ALL.map((s) => (
             <button
               key={s}
               onClick={() => pick(s)}
-              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm hover:bg-accent transition-colors ${s === status ? "bg-primary/10 text-primary font-medium" : "text-foreground"}`}
+              className={`w-full flex items-center gap-2.5 px-3 py-2.5 text-sm transition-colors ${
+                s === status ? "bg-white/10 text-white font-medium" : "text-white/80 hover:bg-white/[0.06]"
+              }`}
             >
               <span
                 className="h-2 w-2 rounded-full shrink-0"

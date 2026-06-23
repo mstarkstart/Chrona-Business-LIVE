@@ -167,10 +167,10 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
   });
 
   return (
-    <div className="flex flex-col h-full bg-slate-50/30">
+    <div className="flex flex-col h-full bg-transparent">
       {/* Online strip */}
       {memberCount !== undefined && (
-        <div className="flex items-center gap-2 px-4 py-2 border-b border-border/60 bg-white/80 backdrop-blur-sm shrink-0">
+        <div className="flex items-center gap-2 px-4 py-2 border-b border-[rgba(200,220,235,0.40)] bg-[rgba(235,244,252,0.70)] backdrop-blur-[12px] shrink-0">
           <span className="flex h-2 w-2 rounded-full bg-emerald-500 shadow-sm shadow-emerald-500/50" />
           <span className="text-xs text-muted-foreground font-medium">{memberCount} member{memberCount !== 1 ? "s" : ""} in workspace</span>
         </div>
@@ -185,7 +185,7 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
               {showDayDivider && (
                 <div className="flex items-center gap-3 my-5">
                   <div className="flex-1 h-px bg-border/60" />
-                  <span className="text-[11px] font-semibold text-muted-foreground/70 bg-slate-100 px-3 py-1 rounded-full border border-border/40">
+                  <span className="text-[11px] font-semibold text-[#40566E] bg-[rgba(255,255,255,0.55)] backdrop-blur-[6px] px-3 py-1 rounded-full border border-white/60">
                     {formatDay(msg.created_at)}
                   </span>
                   <div className="flex-1 h-px bg-border/60" />
@@ -234,7 +234,7 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
                     <div className={`px-3.5 py-2.5 rounded-2xl text-sm leading-relaxed break-words shadow-sm ${
                       isOwn
                         ? "bg-gradient-to-br from-indigo-500 to-indigo-600 text-white rounded-br-sm"
-                        : "bg-white text-slate-800 border border-slate-200/80 rounded-bl-sm"
+                        : "bg-[rgba(255,255,255,0.62)] backdrop-blur-[10px] text-[#1E2D3D] border border-white/70 shadow-[0_1px_8px_rgba(100,140,180,0.10),inset_0_1px_0_rgba(255,255,255,0.80)] rounded-bl-sm"
                     } ${isGrouped && isOwn ? "rounded-tr-lg" : ""} ${isGrouped && !isOwn ? "rounded-tl-lg" : ""}`}>
                       {msg.body}
                     </div>
@@ -247,7 +247,7 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
 
         {messages.length === 0 && (
           <div className="flex flex-col items-center justify-center h-full min-h-[300px] text-center">
-            <div className="h-16 w-16 rounded-2xl bg-indigo-50 border border-indigo-100 flex items-center justify-center mb-4 shadow-sm">
+            <div className="h-16 w-16 rounded-2xl bg-[rgba(255,255,255,0.50)] backdrop-blur-[8px] border border-white/65 flex items-center justify-center mb-4 shadow-[0_1px_6px_rgba(100,140,180,0.10)]">
               <Users className="h-8 w-8 text-indigo-400" />
             </div>
             <p className="font-semibold text-foreground">No messages yet</p>
@@ -270,8 +270,8 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
       </div>
 
       {/* Input */}
-      <div className="border-t border-border/60 p-4 bg-white shrink-0">
-        <div className="flex items-end gap-2.5 rounded-2xl border border-border bg-slate-50 px-4 py-3 focus-within:border-indigo-400 focus-within:ring-2 focus-within:ring-indigo-500/10 focus-within:bg-white transition-all shadow-sm">
+      <div className="p-4 md:p-6 shrink-0 bg-transparent flex flex-col items-center justify-center w-full relative z-10">
+        <div className="w-full max-w-4xl flex items-end gap-3 rounded-[28px] border border-white/60 bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] px-5 py-3.5 shadow-[0_8px_32px_rgba(30,45,61,0.12),inset_0_1px_0_rgba(255,255,255,0.80)] focus-within:bg-[rgba(255,255,255,0.65)] focus-within:shadow-[0_8px_32px_rgba(74,144,212,0.15),inset_0_1px_0_rgba(255,255,255,0.90)] focus-within:border-white/80 transition-all duration-300">
           <textarea
             ref={textareaRef}
             value={draft}
@@ -279,8 +279,8 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
             onKeyDown={handleKeyDown}
             placeholder="Message the team… (Enter to send)"
             rows={1}
-            className="flex-1 resize-none bg-transparent text-sm outline-none placeholder:text-muted-foreground/50 max-h-32 leading-relaxed"
-            style={{ minHeight: "22px" }}
+            className="flex-1 resize-none bg-transparent text-[#1E2D3D] text-[15px] outline-none placeholder:text-[#465C73] max-h-32 leading-relaxed"
+            style={{ minHeight: "24px" }}
             onInput={(e) => {
               const el = e.currentTarget;
               el.style.height = "auto";
@@ -290,13 +290,13 @@ export function ChatWindow({ workspaceId, currentUserId, currentUserName, initia
           <button
             onClick={sendMessage}
             disabled={!draft.trim() || sending}
-            className="h-8 w-8 rounded-xl bg-indigo-600 text-white flex items-center justify-center hover:bg-indigo-700 active:scale-95 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm shrink-0"
+            className="h-9 w-9 rounded-full bg-gradient-to-br from-indigo-500 to-violet-600 text-white flex items-center justify-center hover:from-indigo-400 hover:to-violet-500 active:scale-[0.92] disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-[0_2px_10px_rgba(99,102,241,0.3)] shrink-0 border border-white/30 cursor-pointer"
             title="Send (Enter)"
           >
-            <Send className="h-3.5 w-3.5" />
+            <Send className="h-4 w-4 relative -ml-0.5" />
           </button>
         </div>
-        <p className="text-[10px] text-muted-foreground/50 mt-1.5 px-1">Shift+Enter for new line</p>
+        <p className="text-[10px] text-[#465C73] font-medium mt-2.5 select-none">Shift+Enter for new line</p>
       </div>
     </div>
   );

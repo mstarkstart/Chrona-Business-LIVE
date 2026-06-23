@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 
 export default function DeveloperPage() {
   return (
-    <div className="p-6 space-y-6 max-w-3xl animate-fade-up">
+    <div className="p-6 space-y-6 max-w-3xl mx-auto animate-fade-up">
       <div>
         <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2">
           <Settings2 className="h-6 w-6 text-indigo-500" /> Developer Settings

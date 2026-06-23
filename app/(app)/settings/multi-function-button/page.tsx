@@ -45,7 +45,7 @@ export default async function MFBSettings() {
   const selected = new Set(Array.isArray(cfg?.actions) ? (cfg.actions as string[]) : []);
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
+    <div className="p-6 space-y-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-semibold">Multi-function button</h1>
       <p className="text-sm text-muted-foreground">Pick up to 6 quick actions. Defaults are used when nothing is selected.</p>
 

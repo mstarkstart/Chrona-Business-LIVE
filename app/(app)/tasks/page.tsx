@@ -103,17 +103,17 @@ export default async function TasksPage({
   );
 
   const priorityStyles: Record<string, string> = {
-    urgent: "border-l-4 border-l-red-500 bg-red-50",
-    high: "border-l-4 border-l-orange-450 bg-orange-50",
-    normal: "border-l-4 border-l-indigo-400 bg-indigo-500/10",
-    low: "border-l-4 border-l-zinc-400 bg-muted",
+    urgent: "border-l-4 border-l-red-650 border-red-500/40 bg-red-500/8 shadow-[0_4px_20px_-4px_rgba(239,68,68,0.12)]",
+    high: "border-l-4 border-l-amber-600 border-amber-500/40 bg-amber-500/8 shadow-[0_4px_20px_-4px_rgba(245,158,11,0.12)]",
+    normal: "border-l-4 border-l-indigo-600 border-indigo-500/40 bg-indigo-500/8 shadow-[0_4px_20px_-4px_rgba(99,102,241,0.12)]",
+    low: "border-l-4 border-l-slate-400 border-slate-500/30 bg-slate-500/5 shadow-[0_4px_20px_-4px_rgba(148,163,184,0.06)]",
   };
 
   const priorityTexts: Record<string, string> = {
-    urgent: "text-red-650 bg-red-50 border-red-200",
-    high: "text-orange-500 bg-orange-500/10 border-orange-500/20",
-    normal: "text-primary bg-primary/10 border-primary/20",
-    low: "text-zinc-500 bg-zinc-500/10 border-zinc-500/20",
+    urgent: "text-red-750 bg-red-500/15 border-red-500/30",
+    high: "text-amber-700 bg-amber-500/15 border-amber-500/30",
+    normal: "text-indigo-750 bg-indigo-500/15 border-indigo-500/30",
+    low: "text-slate-650 bg-slate-500/15 border-slate-500/25",
   };
 
   const tabClass = (active: boolean) => 

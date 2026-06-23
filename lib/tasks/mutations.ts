@@ -13,21 +13,46 @@ export async function createTask(formData: FormData) {
   const active = await requireActiveWorkspace();
   if (!can(active.role, "task.create")) throw new Error("Forbidden");
 
+  const title = String(formData.get("title") ?? "").trim();
+  const description = String(formData.get("description") ?? "").trim();
+  const assignedTo = String(formData.get("assigned_to") ?? "") || null;
+  const dueDate = String(formData.get("due_date") ?? "") || null;
+  const startAt = String(formData.get("start_at") ?? "") || null;
+
+  if (!title) throw new Error("Title is required");
+  if (assignedTo && assignedTo !== user.id && !can(active.role, "task.assign")) {
+    throw new Error("Forbidden");
+  }
+
   const supabase = await createSupabaseServerClient();
+
+  if (assignedTo) {
+    const { data: assignee } = await supabase
+      .from("workspace_members")
+      .select("id")
+      .eq("workspace_id", active.workspace.id)
+      .eq("user_id", assignedTo)
+      .eq("status", "active")
+      .maybeSingle();
+
+    if (!assignee) throw new Error("Assignee is not an active workspace member");
+  }
+
   const { data: task, error } = await supabase
     .from("tasks")
     .insert({
       workspace_id: active.workspace.id,
-      title: String(formData.get("title") ?? "").trim(),
-      description: String(formData.get("description") ?? "") || null,
+      title,
+      description: description || null,
       priority: "normal", // Forced default to Normal
-      assigned_to: String(formData.get("assigned_to") ?? "") || null,
-      due_date: String(formData.get("due_date") ?? "") || null,
-      start_at: String(formData.get("start_at") ?? "") || null,
+      status: assignedTo ? "awaiting_acceptance" : "pending",
+      assigned_to: assignedTo,
+      due_date: dueDate,
+      start_at: startAt,
       requires_approval: formData.get("requires_approval") === "on",
       created_by: user.id,
     })
-    .select("id")
+    .select("id, title, assigned_to, priority, due_date")
     .single();
 
   if (error) {
@@ -37,10 +62,48 @@ export async function createTask(formData: FormData) {
 
   if (task) {
     await syncTaskCalendarEvent(task.id);
+
+    if (assignedTo) {
+      await supabaseAdmin.from("notifications").insert({
+        workspace_id: active.workspace.id,
+        user_id: assignedTo,
+        type: "task_assignment",
+        title: `You've been assigned: ${task.title}`,
+        body: description || null,
+        task_id: task.id,
+      });
+
+      try {
+        const [assigneeProfile, assignerProfile] = await Promise.all([
+          supabaseAdmin.from("profiles").select("personal_email").eq("id", assignedTo).maybeSingle(),
+          supabaseAdmin.from("profiles").select("first_name, last_name").eq("id", user.id).maybeSingle(),
+        ]);
+
+        const assigneeEmail = assigneeProfile.data?.personal_email;
+        if (assigneeEmail) {
+          const assignerName =
+            [assignerProfile.data?.first_name, assignerProfile.data?.last_name].filter(Boolean).join(" ") ||
+            "A workspace manager";
+
+          await sendTaskAssignmentEmail({
+            to: assigneeEmail,
+            taskTitle: task.title,
+            taskId: task.id,
+            assignerName,
+            workspaceName: active.workspace.name,
+            priority: task.priority ?? "normal",
+            dueDate: task.due_date ?? null,
+          });
+        }
+      } catch (e) {
+        console.error("[email] sendTaskAssignmentEmail failed:", e);
+      }
+    }
   }
 
   revalidatePath("/tasks");
   revalidatePath("/dashboard");
+  return task;
 }
 
 export async function setTaskStatus(formData: FormData) {

@@ -9,6 +9,8 @@ export const mailer = nodemailer.createTransport({
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
   },
+  connectionTimeout: 2000,
+  socketTimeout: 2000,
 });
 
 export const FROM = process.env.FROM_EMAIL ?? "mishal.chy@mstark.org";

@@ -112,6 +112,20 @@ export function QuickScheduleForm({ createEvent, defaultDate }: QuickScheduleFor
         </div>
       </div>
 
+      {/* Description */}
+      <div>
+        <label className="text-[11px] font-bold uppercase tracking-widest text-muted-foreground block mb-2">
+          Notes <span className="font-normal normal-case">(optional)</span>
+        </label>
+        <textarea
+          name="description"
+          placeholder="Agenda, link, or any notes…"
+          rows={2}
+          maxLength={280}
+          className="w-full rounded-xl border border-white/80 bg-white/50 px-3.5 py-2.5 text-sm placeholder:text-muted-foreground/40 resize-none focus:outline-none focus:ring-4 focus:ring-indigo-500/10 focus:border-indigo-400 focus:bg-white transition-all shadow-sm"
+        />
+      </div>
+
       {/* Share with team toggle */}
       <label className="flex items-start gap-3.5 p-4 rounded-2xl bg-indigo-50/80 border border-indigo-100/60 cursor-pointer hover:bg-indigo-100/80 transition-all mt-4 group shadow-sm">
         <input

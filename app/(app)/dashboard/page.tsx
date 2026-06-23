@@ -23,6 +23,15 @@ function priorityColour(due: string | null | undefined) {
   return "#34d399"; // low / healthy
 }
 
+function getPriorityColorVal(priority: string | null | undefined) {
+  const p = priority?.toLowerCase();
+  if (p === "urgent") return "#ef4444"; // Red
+  if (p === "high") return "#f97316";   // Orange
+  if (p === "normal") return "#fbbf24"; // Yellow
+  if (p === "low") return "#22c55e";    // Green
+  return "#9ca3af";                      // Grey
+}
+
 function greeting() {
   const h = new Date().getHours();
   if (h < 12) return "Good morning";
@@ -273,8 +282,8 @@ export default async function DashboardPage({
             <CardTitle className="mb-4">Priority tasks — nearest deadline first</CardTitle>
             <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4">
               {(priorityTasks ?? []).map((t) => {
-                const glowClass = t.priority === "urgent" ? "priority-glow-urgent" : t.priority === "high" ? "priority-glow-high" : "";
-                const accentColor = priorityColour(t.due_date);
+                const glowClass = t.priority === "urgent" ? "priority-glow-urgent" : t.priority === "high" ? "priority-glow-high" : t.priority === "normal" ? "priority-glow-normal" : "priority-glow-low";
+                const accentColor = getPriorityColorVal(t.priority);
                 
                 return (
                   <Link key={t.id} href={`/tasks/${t.id}`}>
@@ -294,10 +303,10 @@ export default async function DashboardPage({
                       <div className="flex items-center justify-between text-xs text-muted-foreground mt-1">
                         <span className="flex items-center gap-1.5">
                           <span 
-                            className="h-2 w-2 rounded-full shrink-0 status-spark"
+                            className="inline-block h-2 w-2 rounded-full shrink-0 status-spark"
                             style={{ background: accentColor, ["--spark-color" as string]: accentColor }} 
                           />
-                          <span>
+                          <span className="leading-none mt-[0.5px]">
                             {t.due_date
                               ? new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" })
                               : "No deadline"}
@@ -322,13 +331,13 @@ export default async function DashboardPage({
             <CardTitle className="mb-3">My upcoming tasks</CardTitle>
             <ul className="space-y-2.5">
               {(myTasks ?? []).map((t) => (
-                <Link key={t.id} href={`/tasks/${t.id}`}>
+                <Link key={t.id} href={`/tasks/${t.id}`} className="block">
                   <li className="flex items-center justify-between rounded-xl border border-border bg-card p-3.5 hover:bg-accent cursor-pointer transition-all shadow-sm">
                     <span className="text-sm font-medium text-foreground">{t.title}</span>
-                    <div className="flex items-center gap-3">
-                      <span className="h-2.5 w-2.5 rounded-full status-spark"
-                        style={{ background: priorityColour(t.due_date), ["--spark-color" as string]: priorityColour(t.due_date) }} />
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2">
+                      <span className="inline-block h-2 w-2 rounded-full shrink-0 status-spark"
+                        style={{ background: getPriorityColorVal(t.priority), ["--spark-color" as string]: getPriorityColorVal(t.priority) }} />
+                      <span className="text-xs text-muted-foreground leading-none mt-[0.5px]">
                         {t.due_date ? new Date(t.due_date).toLocaleDateString("en-US", { month: "short", day: "numeric" }) : "—"}
                       </span>
                     </div>

@@ -31,6 +31,8 @@ async function createEvent(formData: FormData) {
     endT = `${String((h + 1) % 24).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
   }
 
+  const description = String(formData.get("description") ?? "").trim() || null;
+
   const { error } = await supabase.from("calendar_events").insert({
     workspace_id: active.workspace.id,
     owner_id:     user.id,
@@ -39,7 +41,8 @@ async function createEvent(formData: FormData) {
     start_at:     `${date}T${startT}:00`,
     end_at:       `${date}T${endT}:00`,
     is_team,
-  });
+    description,
+  } as any);
 
   if (error) {
     console.error("Failed to insert calendar event:", error);
@@ -132,6 +135,16 @@ export default async function CalendarPage({
   const { data: rawEvents } = await eventsQuery;
   const allEvents = (rawEvents ?? []) as any[];
 
+  // Fetch incomplete tasks with due dates for calendar overlay
+  const { data: tasksDue } = await supabase
+    .from("tasks")
+    .select("id, title, due_date, status, priority")
+    .eq("workspace_id", active.workspace.id)
+    .not("due_date", "is", null)
+    .not("status", "in", '("completed","cancelled")')
+    .gte("due_date", fetchStart.toISOString().slice(0, 10))
+    .lte("due_date", fetchEnd.toISOString().slice(0, 10));
+
   const todayDate = today.toLocaleDateString("en-US", { weekday: "long", month: "long", year: "numeric" });
   const todayStr = today.toISOString().slice(0, 10);
 
@@ -148,7 +161,7 @@ export default async function CalendarPage({
     : null;
 
   return (
-    <div className="bg-mesh p-4 md:p-6 h-[calc(100vh-57px)] flex flex-col overflow-hidden space-y-4 animate-fade-up">
+    <div className="bg-mesh p-4 md:p-6 min-h-[calc(100vh-57px)] flex flex-col overflow-y-auto space-y-4 animate-fade-up">
       <CalendarRealtimeSync workspaceId={active.workspace.id} ownerId={user.id} />
 
       {/* ── Header ── */}
@@ -193,12 +206,13 @@ export default async function CalendarPage({
       </header>
 
       {/* ── Main Layout: Calendar + Sidebar ── */}
-      <div className="flex-1 min-h-0 flex flex-col lg:flex-row gap-5">
-        
+      <div className="flex flex-col lg:flex-row gap-5 items-start">
+
         {/* FullCalendar wrapper */}
-        <div className="flex-1 min-h-0 overflow-hidden animate-fade-up delay-100">
+        <div className="flex-1 min-w-0 animate-fade-up delay-100">
           <FullCalendarClient
             events={allEvents ?? []}
+            taskEvents={tasksDue ?? []}
             teamMode={teamMode}
             currentUserId={user.id}
             createEvent={createEvent}
@@ -206,10 +220,10 @@ export default async function CalendarPage({
           />
         </div>
 
-        {/* Sidebar */}
-        <div className="w-full lg:w-80 shrink-0 flex flex-col overflow-y-auto pr-1 animate-fade-up delay-200 scrollbar-hide pb-10">
+        {/* Sidebar — Quick Schedule + Team Today only */}
+        <div className="w-full lg:w-80 shrink-0 flex flex-col gap-4 animate-fade-up delay-200">
           {/* Quick Schedule card */}
-          <div className="glass-card rounded-3xl p-6 shadow-xl shadow-indigo-900/5 bg-white/60 backdrop-blur-xl border border-white/60 relative overflow-hidden">
+          <div className="glass-card rounded-3xl p-6 shadow-xl shadow-indigo-900/5 bg-white/60 backdrop-blur-xl border border-white/60 relative">
             <div className="absolute top-0 right-0 p-32 bg-indigo-400/10 rounded-full blur-3xl -z-10 pointer-events-none translate-x-1/3 -translate-y-1/3" />
             <h2 className="text-sm font-extrabold tracking-wide text-foreground mb-6 flex items-center gap-2">
               <div className="h-7 w-7 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-sm shadow-indigo-500/30">
@@ -220,11 +234,9 @@ export default async function CalendarPage({
             <QuickScheduleForm createEvent={createEvent} defaultDate={todayStr} />
           </div>
 
-          <UpcomingReminders events={allEvents ?? []} />
-
           {/* Team Today panel — only in team mode */}
           {teamMode && memberMap && Object.keys(memberMap).length > 0 && (
-            <div className="glass-card rounded-3xl p-5 shadow-lg shadow-indigo-900/5 bg-white/60 backdrop-blur-xl border border-white/60 mt-4 animate-fade-up delay-300">
+            <div className="glass-card rounded-3xl p-5 shadow-lg shadow-indigo-900/5 bg-white/60 backdrop-blur-xl border border-white/60 animate-fade-up delay-300">
               <h2 className="text-sm font-extrabold tracking-wide text-foreground mb-4 flex items-center gap-2">
                 <div className="h-6 w-6 rounded-md bg-indigo-100 flex items-center justify-center">
                   <Users className="h-3.5 w-3.5 text-indigo-600" />
@@ -254,6 +266,12 @@ export default async function CalendarPage({
         </div>
 
       </div>
+
+      {/* ── Upcoming (24h) — full width below calendar + sidebar ── */}
+      <div className="animate-fade-up delay-300 pb-6">
+        <UpcomingReminders events={allEvents ?? []} />
+      </div>
+
     </div>
   );
 }

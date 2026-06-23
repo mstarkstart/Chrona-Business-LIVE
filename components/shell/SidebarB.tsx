@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { ChevronLeft, ChevronRight, User } from "lucide-react";
+import { ChevronLeft, ChevronRight, User, Clock, CalendarCheck, Sparkles, Radio } from "lucide-react";
 import { ActivityStatusPicker } from "./ActivityStatusPicker";
 import { LiveActivityList } from "./LiveActivityList";
 import { StatusPickerPopover } from "./StatusPickerPopover";
@@ -109,7 +109,7 @@ export function SidebarB({
 
   return (
     <aside
-      className={`hidden lg:relative lg:flex shrink-0 h-full border-l border-border bg-card transition-[width] duration-300 ease-in-out relative ${
+      className={`hidden lg:relative lg:flex shrink-0 h-full border-l border-[rgba(200,220,235,0.40)] bg-[rgba(240,246,252,0.68)] backdrop-blur-[24px] transition-[width] duration-300 ease-in-out relative ${
         collapsed ? "w-14" : "w-72"
       }`}
     >
@@ -134,19 +134,20 @@ export function SidebarB({
               anchorTop={80}
               align="right"
               onClose={() => setStatusHover(false)}
+              onOptimisticUpdate={setCurrentStatus}
             />
           </div>
         )}
 
         <button
           onClick={toggle}
-          className="h-8 w-8 rounded-xl border border-border bg-card text-foreground hover:bg-accent shadow-sm flex items-center justify-center cursor-pointer transition-all active:scale-90"
+          className="h-8 w-8 rounded-[10px] bg-white/50 border border-white/65 text-[#344B63] hover:bg-white/72 hover:text-[#1E2D3D] shadow-[0_1px_5px_rgba(100,140,180,0.10),inset_0_1px_0_rgba(255,255,255,0.85)] flex items-center justify-center active:scale-[0.88] transition-all duration-130 ease-[cubic-bezier(0.34,1.56,0.64,1)] btn-press"
           title="Expand Sidebar"
         >
-          <ChevronLeft className="h-4 w-4 text-muted-foreground" />
+          <ChevronLeft className="h-4 w-4" />
         </button>
 
-        <div className="w-8 border-t border-border" />
+        <div className="w-8 border-t border-[rgba(180,205,225,0.40)]" />
 
         {/* Collapsed: avatar with status glow ring */}
         <div
@@ -166,7 +167,7 @@ export function SidebarB({
               ["--spark-color" as string]: statusColor,
             }}
           />
-          <div className="h-8 w-8 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center relative z-10">
+          <div className="h-8 w-8 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center relative z-10 border-2 border-white/70 shadow-[0_1px_4px_rgba(80,120,160,0.15)] hover:scale-[1.08] hover:z-10 active:scale-[0.95] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
             {avatarUrl
               ? <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
               : <User className="h-4 w-4 text-white" />}
@@ -190,15 +191,15 @@ export function SidebarB({
         }`}
       >
         {/* ── My Status ── */}
-        <div className="p-4 border-b border-border">
+        <div className="p-4 border-b border-[rgba(200,220,235,0.40)]">
           <div className="flex items-center justify-between mb-4">
-            <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">My status</p>
+            <p className="text-[10px] font-medium uppercase tracking-[0.09em] text-[#40566E]">My status</p>
             <button
               onClick={toggle}
-              className="h-7 w-7 rounded-lg border border-border bg-card text-foreground hover:bg-accent flex items-center justify-center cursor-pointer transition-all active:scale-90"
+              className="h-8 w-8 rounded-[10px] bg-white/50 border border-white/65 text-[#344B63] hover:bg-white/72 hover:text-[#1E2D3D] shadow-[0_1px_5px_rgba(100,140,180,0.10),inset_0_1px_0_rgba(255,255,255,0.85)] flex items-center justify-center active:scale-[0.88] transition-all duration-130 ease-[cubic-bezier(0.34,1.56,0.64,1)] btn-press"
               title="Collapse Sidebar"
             >
-              <ChevronRight className="h-3.5 w-3.5 text-muted-foreground" />
+              <ChevronRight className="h-4 w-4" />
             </button>
           </div>
 
@@ -215,7 +216,7 @@ export function SidebarB({
                 }}
               />
               {/* Avatar */}
-              <div className="h-14 w-14 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center relative z-10 shadow-md">
+              <div className="h-14 w-14 rounded-full overflow-hidden bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center relative z-10 border-2 border-white/70 shadow-[0_1px_4px_rgba(80,120,160,0.15)] hover:scale-[1.08] hover:z-10 active:scale-[0.95] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)]">
                 {avatarUrl
                   ? <img src={avatarUrl} alt={userName} className="h-full w-full object-cover" />
                   : <User className="h-7 w-7 text-white" />}
@@ -232,21 +233,21 @@ export function SidebarB({
 
             {/* Name + current status label */}
             <div className="text-center">
-              <p className="text-sm font-semibold text-foreground">{userName}</p>
-              <p className="text-xs font-medium mt-0.5" style={{ color: statusColor }}>
+              <p className="text-[14px] font-semibold text-[#1E2D3D]">{userName}</p>
+              <p className="text-[12px] font-medium mt-0.5" style={{ color: statusColor }}>
                 {STATUS_LABEL[currentStatus]}
               </p>
-              <p className="text-[10px] text-muted-foreground mt-0.5">
+              <p className="text-[10px] text-[#40566E] mt-0.5">
                 ⏱️ for <TimeAgo dateString={currentStatusUpdatedAt} />
               </p>
             </div>
           </div>
 
           {/* Status picker dropdown */}
-          <ActivityStatusPicker businessMemberId={myMemberId} initial={currentStatus} updatedAt={currentStatusUpdatedAt} />
+          <ActivityStatusPicker businessMemberId={myMemberId} initial={currentStatus} updatedAt={currentStatusUpdatedAt} onOptimisticUpdate={setCurrentStatus} />
         </div>
 
-        <Section icon={<span className="text-base select-none">🕒</span>} title="In progress">
+        <Section icon={<Clock className="h-[15px] w-[15px] text-[#40566E]" />} title="In progress">
           {inProgressTasks.length === 0 ? (
             <Empty>No active work right now.</Empty>
           ) : (
@@ -264,7 +265,7 @@ export function SidebarB({
           )}
         </Section>
 
-        <Section icon={<span className="text-base select-none">✅</span>} title="Today's tasks">
+        <Section icon={<CalendarCheck className="h-[15px] w-[15px] text-emerald-600" />} title="Today's tasks">
           {myTasksToday.length === 0 ? (
             <Empty>Nothing scheduled today.</Empty>
           ) : (
@@ -277,20 +278,20 @@ export function SidebarB({
           )}
         </Section>
 
-        <Section icon={<span className="text-base select-none">✨</span>} title="Suggested">
+        <Section icon={<Sparkles className="h-[15px] w-[15px] text-amber-500" />} title="Suggested">
           {suggestedTasks.length === 0 ? (
             <Empty>All tasks are assigned.</Empty>
           ) : (
             suggestedTasks.map((t) => (
               <li key={t.id} className="flex items-center gap-2.5 py-1.5 text-sm text-foreground hover:text-primary transition-all duration-200 cursor-pointer">
-                <span className="text-xs shrink-0 select-none">✨</span>
+                <Sparkles className="h-3 w-3 text-amber-500 shrink-0" />
                 <span className="truncate text-muted-foreground">{t.title}</span>
               </li>
             ))
           )}
         </Section>
 
-        <Section icon={<span className="text-base select-none animate-pulse-soft">📡</span>} title="Team now">
+        <Section icon={<Radio className="h-[15px] w-[15px] animate-pulse text-indigo-500" />} title="Team now">
           <LiveActivityList businessId={businessId} initial={initialPresence} />
         </Section>
       </div>
@@ -300,10 +301,10 @@ export function SidebarB({
 
 function Section({ title, icon, children }: { title: string; icon: React.ReactNode; children: React.ReactNode }) {
   return (
-    <div className="p-4 border-b border-border">
+    <div className="m-3 p-3 bg-white/35 backdrop-blur-[12px] rounded-[12px] border border-white/55 shadow-[0_1px_8px_rgba(100,140,180,0.08),inset_0_1px_0_rgba(255,255,255,0.75)]">
       <div className="flex items-center gap-1.5 mb-3">
-        <span className="text-muted-foreground">{icon}</span>
-        <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">{title}</p>
+        <span className="text-[#40566E]">{icon}</span>
+        <p className="text-[10px] font-medium uppercase tracking-[0.09em] text-[#40566E]">{title}</p>
       </div>
       <ul className="space-y-0.5">{children}</ul>
     </div>

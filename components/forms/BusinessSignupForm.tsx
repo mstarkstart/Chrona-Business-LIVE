@@ -53,9 +53,9 @@ export function BusinessSignupForm({
       initial={{ opacity: 0, y: 15 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5 }}
-      className="border-gradient rounded-3xl p-px shadow-2xl shadow-indigo-100/50"
+      className="rounded-3xl p-px shadow-[0_16px_60px_-15px_rgba(30,45,61,0.3)] bg-gradient-to-b from-white/60 to-white/20"
     >
-      <form action={saveAction} className="rounded-3xl bg-white/80 backdrop-blur-md px-8 py-10 space-y-6">
+      <form action={saveAction} className="rounded-3xl bg-[rgba(255,255,255,0.45)] backdrop-blur-[24px] px-8 py-10 shadow-[inset_0_1px_0_rgba(255,255,255,0.90)] border border-white/30 space-y-6">
         {/* Hidden Fields for Custom UI widgets */}
         <input type="hidden" name="industry" value={industry} />
         <input type="hidden" name="business_type" value={bizType} />
@@ -74,7 +74,7 @@ export function BusinessSignupForm({
               required
               defaultValue={defaultValues?.name}
               placeholder="e.g. Acme Corporation"
-              className="pl-11 h-12 rounded-xl border-border focus:bg-white"
+              className="pl-11 w-full h-12 rounded-xl border border-white/60 bg-[rgba(255,255,255,0.55)] backdrop-blur-md text-[#1E2D3D] placeholder:text-[#40566E] focus:border-indigo-500/50 focus:bg-white/90 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-[inset_0_2px_4px_rgba(100,140,180,0.04)]"
             />
           </div>
         </div>
@@ -90,7 +90,7 @@ export function BusinessSignupForm({
               name="founding_date"
               type="date"
               defaultValue={defaultValues?.founding_date}
-              className="pl-11 h-12 rounded-xl border-border focus:bg-white"
+              className="pl-11 w-full h-12 rounded-xl border border-white/60 bg-[rgba(255,255,255,0.55)] backdrop-blur-md text-[#1E2D3D] placeholder:text-[#40566E] focus:border-indigo-500/50 focus:bg-white/90 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-[inset_0_2px_4px_rgba(100,140,180,0.04)]"
             />
           </div>
         </div>
@@ -163,7 +163,7 @@ export function BusinessSignupForm({
               defaultValue={defaultValues?.services}
               rows={3}
               placeholder="Tell us briefly about what services you offer..."
-              className="pl-11 w-full rounded-xl border border-border bg-muted/20 px-4 py-3 text-sm focus:border-indigo-500/50 focus:bg-white transition-colors"
+              className="pl-11 w-full rounded-xl border border-white/60 bg-[rgba(255,255,255,0.55)] backdrop-blur-md px-4 py-3 text-sm text-[#1E2D3D] placeholder:text-[#40566E] focus:border-indigo-500/50 focus:bg-white/90 focus:ring-2 focus:ring-indigo-500/20 transition-all shadow-[inset_0_2px_4px_rgba(100,140,180,0.04)]"
             />
           </div>
         </div>
@@ -230,7 +230,7 @@ export function BusinessSignupForm({
             <ChevronLeft className="h-4 w-4" />
             Back
           </Button>
-          <Button type="submit" size="lg" className="px-8 h-12 rounded-xl bg-primary text-white font-semibold shadow-lg hover:scale-[1.01] active:scale-[0.99] cursor-pointer flex items-center gap-1.5">
+          <Button type="submit" size="lg" className="px-8 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 hover:from-indigo-400 hover:to-violet-500 text-white font-semibold shadow-[0_4px_14px_rgba(99,102,241,0.35)] hover:shadow-[0_6px_20px_rgba(99,102,241,0.45)] hover:-translate-y-0.5 active:scale-95 cursor-pointer flex items-center gap-1.5 transition-all duration-200 border border-white/40">
             Continue
             <ChevronRight className="h-4 w-4" />
           </Button>

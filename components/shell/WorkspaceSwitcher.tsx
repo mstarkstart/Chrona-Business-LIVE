@@ -3,6 +3,7 @@
 import { useTransition, useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { ChevronsUpDown, Check } from "lucide-react";
+import { createPortal } from "react-dom";
 
 type Item = { id: string; name: string; logoUrl?: string | null };
 
@@ -20,6 +21,11 @@ export function WorkspaceSwitcher({
   const [open, setOpen] = useState(false);
   const triggerRef = useRef<HTMLButtonElement>(null);
   const [dropdownStyle, setDropdownStyle] = useState<React.CSSProperties>({});
+  const [mounted, setMounted] = useState(false);
+
+  useEffect(() => {
+    setMounted(true);
+  }, []);
 
   // Compute fixed position when opening so it escapes any overflow:hidden parent
   useEffect(() => {
@@ -67,7 +73,7 @@ export function WorkspaceSwitcher({
         ref={triggerRef}
         onClick={() => setOpen((o) => !o)}
         disabled={pending}
-        className="w-full flex items-center rounded-lg hover:bg-slate-100 transition-all cursor-pointer p-1.5 gap-2"
+        className={`flex items-center rounded-[10px] bg-white/35 border border-white/55 text-[#1E2D3D] font-semibold text-[14px] hover:bg-white/50 active:scale-[0.97] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] btn-press ${collapsed ? "h-11 w-11 justify-center p-0 shrink-0" : "w-full gap-2 px-3 py-2"}`}
       >
         {active.logoUrl ? (
           <img
@@ -80,17 +86,17 @@ export function WorkspaceSwitcher({
             {initial}
           </div>
         )}
-        <span className={`font-medium truncate flex-1 text-left text-sm transition-[opacity,max-width] duration-300 overflow-hidden whitespace-nowrap ${
-          collapsed ? "opacity-0 max-w-0 pointer-events-none" : "opacity-100 max-w-[150px]"
+        <span className={`transition-all duration-300 overflow-hidden whitespace-nowrap ${
+          collapsed ? "opacity-0 w-0 pointer-events-none" : "truncate flex-1 text-left opacity-100 max-w-[150px] ml-2"
         }`}>
           {active.name}
         </span>
-        <ChevronsUpDown className={`h-3.5 w-3.5 text-muted-foreground shrink-0 transition-[opacity,width] duration-300 ${
-          collapsed ? "opacity-0 w-0 pointer-events-none" : "opacity-100 w-3.5"
+        <ChevronsUpDown className={`text-[#40566E] shrink-0 transition-all duration-300 ${
+          collapsed ? "opacity-0 w-0 h-0 pointer-events-none ml-0" : "opacity-100 h-3.5 w-3.5 ml-1"
         }`} />
       </button>
 
-      {open && (
+      {open && mounted && createPortal(
         <>
           {/* Invisible backdrop to close on outside click */}
           <div className="fixed inset-0 z-[9998]" onClick={() => setOpen(false)} />
@@ -98,7 +104,7 @@ export function WorkspaceSwitcher({
           {/* Dropdown — fixed position to escape sidebar overflow */}
           <div
             style={dropdownStyle}
-            className="rounded-xl border border-border bg-white shadow-2xl overflow-hidden animate-fade-up"
+            className="rounded-xl border border-white/60 bg-[rgba(255,255,255,0.95)] backdrop-blur-[24px] shadow-[0_12px_40px_-8px_rgba(30,45,61,0.25)] overflow-hidden animate-fade-up"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="px-3 py-2 text-[10px] font-bold uppercase tracking-wider text-muted-foreground border-b border-border bg-slate-50/80">
@@ -122,7 +128,8 @@ export function WorkspaceSwitcher({
               </button>
             ))}
           </div>
-        </>
+        </>,
+        document.body
       )}
     </div>
   );

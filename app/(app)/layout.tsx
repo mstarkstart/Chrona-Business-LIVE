@@ -85,12 +85,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-      <div className="flex h-screen bg-mesh text-foreground overflow-hidden relative theme-app">
-      <div className="absolute inset-0 z-0 overflow-hidden pointer-events-none">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 blur-[120px] animate-blob" />
-        <div className="absolute top-[20%] right-[-10%] w-[30%] h-[50%] rounded-full bg-purple-500/10 blur-[100px] animate-blob delay-200" />
-        <div className="absolute bottom-[-20%] left-[20%] w-[50%] h-[50%] rounded-full bg-emerald-500/10 blur-[120px] animate-blob delay-400" />
-      </div>
+      <div className="flex h-screen text-foreground overflow-hidden relative app-shell">
       <SidebarA
         active={{ id: active.workspace.id, name: active.workspace.name, logoUrl: (active.workspace as any).logo_url ?? null }}
         options={memberships.map((m) => ({ id: m.workspace.id, name: m.workspace.name, logoUrl: (m.workspace as any).logo_url ?? null }))}
@@ -111,7 +106,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
           workspaceName={active.workspace.name}
           avatarUrl={(user.profile as any)?.avatar_url}
         />
-        <div className="flex-1 overflow-y-auto relative pb-16">
+        <div className="flex-1 overflow-y-auto relative pb-16 flex flex-col">
           <PageTransition>{children}</PageTransition>
         </div>
         <MultiFunctionButton actions={mfbActions} workspaceId={active.workspace.id} />

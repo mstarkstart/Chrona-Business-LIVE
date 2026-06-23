@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ArrowRight, BarChart3, CheckCircle2 } from "lucide-react";
+import { ArrowRight, CheckCircle2 } from "lucide-react";
 import { InteractiveBackground } from "@/components/ui/InteractiveBackground";
 
 async function doReset(formData: FormData) {
@@ -46,9 +46,7 @@ export default async function ResetPasswordPage({
           <div className="rounded-3xl bg-white/80 backdrop-blur-md px-8 py-10">
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <BarChart3 className="h-7 w-7 text-white" />
-              </div>
+              <img src="/chrona-logo.png" alt="Chrona Logo" className="h-14 w-14 object-contain" />
             </div>
 
             <h1 className="text-3xl font-bold text-center tracking-tighter">Set New Password</h1>

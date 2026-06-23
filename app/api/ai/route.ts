@@ -143,11 +143,15 @@ AND append a special JSON block exactly like this (no markdown fences, just plai
 {"title":"<task title>","description":"<description or null>","priority":"normal","due_date":"<YYYY-MM-DD or null>"}
 [/CREATE_TASK_ACTION]
 
+CRITICAL FOR TASK CREATION: Do NOT ask any clarifying or follow-up questions when asked to create a task. If the user doesn't specify a priority, description, or due date, immediately generate the [CREATE_TASK_ACTION] block using logical defaults (priority: "normal", description: null, due_date: null). Never ask the user to provide more details before executing.
+
 You can CREATE DOCUMENTS on behalf of the user. When asked to create a doc or file, respond AND append:
 
 [CREATE_DOC_ACTION]
 {"title":"<doc title>","content":"<initial content>"}
 [/CREATE_DOC_ACTION]
+
+CRITICAL FOR DOCUMENT CREATION: Do NOT ask any clarifying or follow-up questions when asked to create a document. If parameters or content are missing, use logical defaults immediately. Never ask the user to provide more details before executing.
 
 Only append these action blocks when the user explicitly asks you to create something. For general questions, just answer.`,
 };

@@ -19,6 +19,7 @@ export function StatusPickerPopover({
   anchorBottom,
   anchorTop,
   align = "left",
+  onOptimisticUpdate,
 }: {
   initial: ActivityStatus;
   updatedAt?: string | null;
@@ -28,6 +29,7 @@ export function StatusPickerPopover({
   anchorBottom?: number;
   anchorTop?: number;
   align?: "left" | "right";
+  onOptimisticUpdate?: (status: ActivityStatus) => void;
 }) {
   const [status, setStatus] = useState<ActivityStatus>(initial);
   const [saving, setSaving] = useState(false);
@@ -42,6 +44,7 @@ export function StatusPickerPopover({
   async function pick(s: ActivityStatus) {
     if (s === status) { onClose(); return; }
     setStatus(s);
+    onOptimisticUpdate?.(s);
     setSaving(true);
     try {
       const fd = new FormData();
@@ -59,7 +62,7 @@ export function StatusPickerPopover({
   return (
     <div
       ref={ref}
-      className={`fixed z-[200] w-52 rounded-2xl border border-border bg-white shadow-2xl overflow-hidden animate-fade-up ${
+      className={`fixed z-[200] w-52 rounded-2xl border border-white/10 bg-[rgba(18,18,28,0.82)] backdrop-blur-[32px] shadow-[0_20px_60px_-8px_rgba(0,0,0,0.7),0_0_0_1px_rgba(255,255,255,0.06)_inset] overflow-hidden animate-fade-up ${
         align === "left" ? "left-[76px]" : "right-[64px]"
       }`}
       style={
@@ -69,7 +72,7 @@ export function StatusPickerPopover({
       }
     >
       {/* Avatar + current status header */}
-      <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-border bg-gradient-to-r from-indigo-50/80 to-violet-50/40">
+      <div className="flex items-center gap-2.5 px-3.5 py-3 border-b border-white/[0.08] bg-gradient-to-r from-indigo-500/10 to-violet-500/5">
         <div className="relative shrink-0">
           <span
             className="absolute inset-[-3px] rounded-full status-spark pointer-events-none"
@@ -82,11 +85,11 @@ export function StatusPickerPopover({
           </div>
         </div>
         <div className="min-w-0">
-          <p className="text-xs font-bold text-foreground truncate">{userName}</p>
+          <p className="text-xs font-bold text-white truncate">{userName}</p>
           <div className="flex items-center gap-1">
             <p className="text-[10px] font-semibold" style={{ color }}>{STATUS_LABEL[status]}</p>
-            <span className="text-[9px] text-muted-foreground/60">•</span>
-            <p className="text-[9px] text-muted-foreground">⏱️ <TimeAgo dateString={updatedAt} /></p>
+            <span className="text-[9px] text-white/30">•</span>
+            <p className="text-[9px] text-white/40">⏱️ <TimeAgo dateString={updatedAt} /></p>
           </div>
         </div>
       </div>
@@ -102,7 +105,7 @@ export function StatusPickerPopover({
               onClick={() => pick(s)}
               disabled={saving}
               className={`w-full flex items-center gap-2.5 px-3.5 py-2 text-xs transition-colors cursor-pointer group ${
-                active ? "bg-indigo-50" : "hover:bg-slate-50"
+                active ? "bg-white/[0.10]" : "hover:bg-white/[0.06]"
               }`}
             >
               <span
@@ -112,7 +115,7 @@ export function StatusPickerPopover({
                   boxShadow: active ? `0 0 7px 2px ${c}77` : `0 0 3px ${c}44`,
                 }}
               />
-              <span className="flex-1 text-left font-medium text-foreground">{STATUS_LABEL[s]}</span>
+              <span className="flex-1 text-left font-medium text-white/90">{STATUS_LABEL[s]}</span>
               <span className="shrink-0 text-base leading-none">{STATUS_EMOJI[s]}</span>
               {active && (
                 <span className="h-1.5 w-1.5 rounded-full shrink-0" style={{ background: c }} />

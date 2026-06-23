@@ -40,7 +40,7 @@ export default async function ProfileSettings() {
   const p = user.profile;
 
   return (
-    <div className="p-6 space-y-6 max-w-2xl">
+    <div className="p-6 space-y-6 max-w-2xl mx-auto">
       <h1 className="text-2xl font-semibold">Profile</h1>
       <Card className="flex flex-col md:flex-row gap-6 p-6">
         <div className="flex shrink-0 items-center justify-center md:border-r md:border-border md:pr-6 pb-6 md:pb-0">

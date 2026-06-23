@@ -21,7 +21,10 @@ export async function POST(request: NextRequest) {
       .select("id")
       .single();
 
-    if (error) return NextResponse.json({ error: error.message }, { status: 500 });
+    if (error) {
+      console.error("Chat send error:", error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
     return NextResponse.json({ id: data.id });
   } catch {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

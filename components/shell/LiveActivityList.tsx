@@ -23,10 +23,11 @@ function Avatar({ row, size = 6 }: { row: Row; size?: number }) {
   const [imgFailed, setImgFailed] = useState(false);
   const sizeClass = size === 6 ? "h-6 w-6" : "h-7 w-7";
   const textClass = size === 6 ? "text-[10px]" : "text-xs";
+  const baseClasses = `${sizeClass} rounded-full object-cover shrink-0 border-2 border-white/70 shadow-[0_1px_4px_rgba(80,120,160,0.15)] hover:scale-[1.08] hover:z-10 active:scale-[0.95] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative cursor-pointer`;
 
   return imgFailed || !row.avatar_url ? (
     <div
-      className={`${sizeClass} rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 flex items-center justify-center ${textClass} font-bold shrink-0`}
+      className={`${baseClasses} bg-indigo-500/10 text-indigo-600 flex items-center justify-center ${textClass} font-bold`}
       title={`${row.user_name} (${STATUS_LABEL[row.status]})`}
     >
       {row.user_name.charAt(0).toUpperCase()}
@@ -35,7 +36,7 @@ function Avatar({ row, size = 6 }: { row: Row; size?: number }) {
     <img
       src={row.avatar_url}
       alt={row.user_name}
-      className={`${sizeClass} rounded-full object-cover ring-1 ring-black/5 shrink-0`}
+      className={baseClasses}
       title={`${row.user_name} (${STATUS_LABEL[row.status]})`}
       onError={() => setImgFailed(true)}
     />
@@ -172,18 +173,18 @@ export function LiveActivityList({
                   </div>
                 )}
                 <span
-                  className="absolute -bottom-1 -right-1 flex items-center justify-center text-[10px] leading-none bg-white rounded-full p-[1.5px] shadow-sm ring-1 ring-black/5"
+                  className="absolute -bottom-1 -right-1 flex items-center justify-center text-[10px] leading-none bg-white rounded-full p-[1.5px] shadow-sm ring-1 ring-black/5 z-20"
                   title={STATUS_LABEL[r.status]}
                 >
                   {STATUS_EMOJI[r.status]}
                 </span>
               </div>
               <div className="min-w-0">
-                <span className="block truncate font-semibold text-xs text-foreground group-hover:text-primary transition-colors duration-150">
+                <span className="block truncate font-semibold text-[14px] text-[#1E2D3D] group-hover:text-primary transition-colors duration-150">
                   {r.user_name}
                 </span>
                 {r.status === "tasking" && r.task_title && (
-                  <span className="block truncate text-[10px] text-muted-foreground/70">📋 {r.task_title}</span>
+                  <span className="block truncate text-[10px] text-[#40566E]">📋 {r.task_title}</span>
                 )}
               </div>
             </div>
@@ -205,31 +206,6 @@ export function LiveActivityList({
               </span>
             </div>
 
-            {/* Hover Tooltip for expanded state */}
-            <div className="absolute right-full mr-3 top-1/2 -translate-y-1/2 w-max max-w-[220px] bg-slate-900 text-white text-xs px-3 py-2 rounded-lg shadow-xl opacity-0 scale-95 group-hover:opacity-100 group-hover:scale-100 transition-all duration-200 pointer-events-none z-50 flex flex-col gap-1">
-              <p className="font-bold">{r.user_name}</p>
-              <div className="flex items-center gap-1.5 text-slate-300">
-                <span className="text-[10px]">{STATUS_EMOJI[r.status]}</span>
-                <span className="capitalize">{STATUS_LABEL[r.status]}</span>
-              </div>
-              {r.status === "tasking" && r.task_title && (
-                <p className="text-slate-400 text-[10px] truncate">📋 {r.task_title}</p>
-              )}
-              {r.status === "meeting" && (
-                <p className="text-slate-400 text-[10px]">📅 In a meeting</p>
-              )}
-              {r.status === "training" && (
-                <p className="text-slate-400 text-[10px]">📚 In training</p>
-              )}
-              {r.status === "lunch_break" && (
-                <p className="text-slate-400 text-[10px]">🍽️ On lunch break</p>
-              )}
-              <p className="text-slate-400 text-[10px] mt-1 border-t border-slate-700 pt-1">
-                ⏱️ for <TimeAgo dateString={r.updated_at} />
-              </p>
-              {/* Little triangle arrow pointing right */}
-              <div className="absolute top-1/2 right-[-4px] -translate-y-1/2 border-[5px] border-transparent border-l-slate-900" />
-            </div>
           </li>
         ))}
       </ul>
@@ -248,9 +224,11 @@ export function LiveActivityList({
 
 function AvatarWithFallback({ row }: { row: Row }) {
   const [failed, setFailed] = useState(false);
+  const baseClasses = `h-6.5 w-6.5 rounded-full object-cover shrink-0 border-2 border-white/70 shadow-[0_1px_4px_rgba(80,120,160,0.15)] hover:scale-[1.08] hover:z-10 active:scale-[0.95] transition-all duration-150 ease-[cubic-bezier(0.34,1.56,0.64,1)] relative cursor-pointer`;
+  
   if (failed || !row.avatar_url) {
     return (
-      <div className="h-6.5 w-6.5 rounded-full bg-indigo-500/10 text-indigo-600 border border-indigo-500/20 flex items-center justify-center text-[10px] font-bold">
+      <div className={`${baseClasses} bg-indigo-500/10 text-indigo-600 flex items-center justify-center text-[10px] font-bold`}>
         {row.user_name.charAt(0).toUpperCase()}
       </div>
     );
@@ -259,7 +237,7 @@ function AvatarWithFallback({ row }: { row: Row }) {
     <img
       src={row.avatar_url}
       alt={row.user_name}
-      className="h-6.5 w-6.5 rounded-full object-cover ring-1 ring-black/5"
+      className={baseClasses}
       onError={() => setFailed(true)}
     />
   );

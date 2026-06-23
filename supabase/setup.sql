@@ -741,19 +741,82 @@ END;
 $$;
 
 ALTER TABLE public.profiles ADD COLUMN IF NOT EXISTS avatar_url text;
+ALTER TABLE public.workspaces ADD COLUMN IF NOT EXISTS logo_url text;
 
 INSERT INTO storage.buckets (id, name, public)
 VALUES ('avatars', 'avatars', true)
 ON CONFLICT (id) DO NOTHING;
 
+DROP POLICY IF EXISTS "Allow public read access" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated upload access" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated update access" ON storage.objects;
+DROP POLICY IF EXISTS "Allow authenticated delete access" ON storage.objects;
 DROP POLICY IF EXISTS "Allow public read of avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Allow authenticated uploads of avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Allow owners to update avatars" ON storage.objects;
 DROP POLICY IF EXISTS "Allow owners to delete avatars" ON storage.objects;
+DROP POLICY IF EXISTS "users can upload own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "users can update own avatar" ON storage.objects;
+DROP POLICY IF EXISTS "public can view avatars" ON storage.objects;
+DROP POLICY IF EXISTS "authenticated can upload scoped avatars" ON storage.objects;
+DROP POLICY IF EXISTS "authenticated can update scoped avatars" ON storage.objects;
+DROP POLICY IF EXISTS "authenticated can delete scoped avatars" ON storage.objects;
 
-CREATE POLICY "Allow public read of avatars" ON storage.objects FOR SELECT USING (bucket_id = 'avatars');
-CREATE POLICY "Allow authenticated uploads of avatars" ON storage.objects FOR INSERT TO authenticated WITH CHECK (bucket_id = 'avatars');
-CREATE POLICY "Allow owners to update avatars" ON storage.objects FOR UPDATE TO authenticated USING (bucket_id = 'avatars');
-CREATE POLICY "Allow owners to delete avatars" ON storage.objects FOR DELETE TO authenticated USING (bucket_id = 'avatars');
+CREATE POLICY "public can view avatars"
+ON storage.objects FOR SELECT
+TO public
+USING (bucket_id = 'avatars');
+
+CREATE POLICY "authenticated can upload scoped avatars"
+ON storage.objects FOR INSERT
+TO authenticated
+WITH CHECK (
+  bucket_id = 'avatars'
+  AND (
+    auth.uid()::text = (storage.foldername(name))[1]
+    OR (
+      (storage.foldername(name))[1] ~ '^workspace_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      AND public.is_role_at_or_above(replace((storage.foldername(name))[1], 'workspace_', '')::uuid, 'owner')
+    )
+  )
+);
+
+CREATE POLICY "authenticated can update scoped avatars"
+ON storage.objects FOR UPDATE
+TO authenticated
+USING (
+  bucket_id = 'avatars'
+  AND (
+    auth.uid()::text = (storage.foldername(name))[1]
+    OR (
+      (storage.foldername(name))[1] ~ '^workspace_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      AND public.is_role_at_or_above(replace((storage.foldername(name))[1], 'workspace_', '')::uuid, 'owner')
+    )
+  )
+)
+WITH CHECK (
+  bucket_id = 'avatars'
+  AND (
+    auth.uid()::text = (storage.foldername(name))[1]
+    OR (
+      (storage.foldername(name))[1] ~ '^workspace_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      AND public.is_role_at_or_above(replace((storage.foldername(name))[1], 'workspace_', '')::uuid, 'owner')
+    )
+  )
+);
+
+CREATE POLICY "authenticated can delete scoped avatars"
+ON storage.objects FOR DELETE
+TO authenticated
+USING (
+  bucket_id = 'avatars'
+  AND (
+    auth.uid()::text = (storage.foldername(name))[1]
+    OR (
+      (storage.foldername(name))[1] ~ '^workspace_[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$'
+      AND public.is_role_at_or_above(replace((storage.foldername(name))[1], 'workspace_', '')::uuid, 'owner')
+    )
+  )
+);
 
 notify pgrst, 'reload schema';

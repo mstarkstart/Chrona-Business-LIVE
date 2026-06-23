@@ -17,16 +17,13 @@ export const runtime = "nodejs";
 export async function GET(req: Request): Promise<NextResponse> {
   // ── Auth check ────────────────────────────────────────────────────────────
   const cronSecret = process.env.CRON_SECRET;
-  if (cronSecret) {
-    const authHeader = req.headers.get("Authorization") ?? "";
-    if (authHeader !== `Bearer ${cronSecret}`) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-  } else {
-    console.warn(
-      "[cron/weekly-digest] CRON_SECRET is not set — running without auth. " +
-      "Set CRON_SECRET=any-random-string in .env.local to protect this endpoint."
-    );
+  if (!cronSecret) {
+    return NextResponse.json({ error: "CRON_SECRET is not configured" }, { status: 500 });
+  }
+
+  const authHeader = req.headers.get("Authorization") ?? "";
+  if (authHeader !== `Bearer ${cronSecret}`) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
   // ── Fetch all active workspaces ───────────────────────────────────────────

@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { createSupabaseServerClient } from "@/lib/supabase/server";
-import { ArrowRight, BarChart3 } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { InteractiveBackground } from "@/components/ui/InteractiveBackground";
 
 async function signOutAction() {
@@ -63,9 +63,7 @@ export default async function LoginPage({
         <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-6">
           <div className="w-full max-w-md rounded-3xl border border-red-200 bg-white px-8 py-10 shadow-xl text-center space-y-4">
             <div className="flex justify-center">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-red-500 to-rose-600 flex items-center justify-center shadow-lg shadow-red-500/30">
-                <BarChart3 className="h-7 w-7 text-white" />
-              </div>
+              <img src="/chrona-logo.png" alt="Chrona Logo" className="h-14 w-14 object-contain" />
             </div>
             <h1 className="text-xl font-bold text-red-700">Account Suspended</h1>
             <p className="text-sm text-muted-foreground">
@@ -93,9 +91,7 @@ export default async function LoginPage({
       <div className="min-h-[calc(100vh-5rem)] flex items-center justify-center px-6">
         <div className="w-full max-w-md rounded-3xl border border-border bg-white px-8 py-10 shadow-xl text-center space-y-4">
           <div className="flex justify-center">
-            <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-              <BarChart3 className="h-7 w-7 text-white" />
-            </div>
+            <img src="/chrona-logo.png" alt="Chrona Logo" className="h-14 w-14 object-contain" />
           </div>
           <h1 className="text-xl font-bold">Wrong account?</h1>
           <p className="text-sm text-muted-foreground">
@@ -131,9 +127,7 @@ export default async function LoginPage({
           <div className="rounded-3xl bg-white/80 backdrop-blur-md px-8 py-10">
             {/* Logo */}
             <div className="flex justify-center mb-6">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <BarChart3 className="h-7 w-7 text-white" />
-              </div>
+              <img src="/chrona-logo.png" alt="Chrona Logo" className="h-14 w-14 object-contain" />
             </div>
 
             <h1 className="text-3xl font-bold text-center tracking-tighter">Welcome back</h1>

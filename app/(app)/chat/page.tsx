@@ -66,9 +66,9 @@ export default async function ChatPage() {
       : "Me";
 
   return (
-    <div className="flex flex-col" style={{ height: "calc(100vh - 57px)" }}>
+    <div className="absolute inset-0 flex flex-col">
       {/* Page header */}
-      <div className="border-b border-border px-6 py-4 shrink-0">
+      <div className="border-b border-[rgba(200,220,235,0.40)] px-6 py-4 bg-[rgba(235,244,252,0.60)] backdrop-blur-[16px] shrink-0">
         <div className="flex items-center gap-3">
           <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
             <span className="text-white text-sm">💬</span>

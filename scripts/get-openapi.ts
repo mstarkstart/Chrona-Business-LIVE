@@ -12,9 +12,9 @@ if (!url || !key) {
 async function main() {
   const response = await fetch(`${url}/rest/v1/`, {
     headers: {
-      apikey: key,
+      apikey: key as string,
       Authorization: `Bearer ${key}`
-    }
+    } as HeadersInit
   });
   if (!response.ok) {
     console.error("Fetch failed:", response.statusText);

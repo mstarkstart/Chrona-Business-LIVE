@@ -30,12 +30,15 @@ export async function sendInvitationEmail(opts: SendInvitationEmailOpts): Promis
       inviteUrl,
       role: opts.role,
     });
-    await mailer.sendMail({ from: FROM, to: opts.to, subject, html });
+    // Non-blocking fire-and-forget in background
+    mailer.sendMail({ from: FROM, to: opts.to, subject, html }).catch((err) => {
+      console.error("[email] sendInvitationEmail failed in background:", err);
+      console.warn("\n[EMAIL FALLBACK] You can manually copy the link: \n" + inviteUrl + "\n");
+    });
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[email] sendInvitationEmail failed:", msg);
-    console.warn("\n[EMAIL FALLBACK] Resend invitation failed. You can manually copy the link: \n" + inviteUrl + "\n");
+    console.error("[email] sendInvitationEmail templates failed:", msg);
     return { ok: false, error: msg };
   }
 }
@@ -64,11 +67,14 @@ export async function sendTaskAssignmentEmail(opts: SendTaskAssignmentEmailOpts)
       priority: opts.priority,
       dueDate: opts.dueDate,
     });
-    await mailer.sendMail({ from: FROM, to: opts.to, subject, html });
+    // Non-blocking fire-and-forget in background
+    mailer.sendMail({ from: FROM, to: opts.to, subject, html }).catch((err) => {
+      console.error("[email] sendTaskAssignmentEmail failed in background:", err);
+    });
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[email] sendTaskAssignmentEmail failed:", msg);
+    console.error("[email] sendTaskAssignmentEmail templates failed:", msg);
     return { ok: false, error: msg };
   }
 }
@@ -89,11 +95,14 @@ export async function sendTaskCompletionEmail(opts: SendTaskCompletionEmailOpts)
       completedByName: opts.completedByName,
       workspaceName: opts.workspaceName,
     });
-    await mailer.sendMail({ from: FROM, to: opts.to, subject, html });
+    // Non-blocking fire-and-forget in background
+    mailer.sendMail({ from: FROM, to: opts.to, subject, html }).catch((err) => {
+      console.error("[email] sendTaskCompletionEmail failed in background:", err);
+    });
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[email] sendTaskCompletionEmail failed:", msg);
+    console.error("[email] sendTaskCompletionEmail templates failed:", msg);
     return { ok: false, error: msg };
   }
 }
@@ -120,11 +129,14 @@ export async function sendWeeklyDigestEmail(opts: SendWeeklyDigestEmailOpts): Pr
       overdueCount: opts.overdueCount,
       topTasks: opts.topTasks,
     });
-    await mailer.sendMail({ from: FROM, to: opts.to, subject, html });
+    // Non-blocking fire-and-forget in background
+    mailer.sendMail({ from: FROM, to: opts.to, subject, html }).catch((err) => {
+      console.error("[email] sendWeeklyDigestEmail failed in background:", err);
+    });
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[email] sendWeeklyDigestEmail failed:", msg);
+    console.error("[email] sendWeeklyDigestEmail templates failed:", msg);
     return { ok: false, error: msg };
   }
 }
@@ -145,11 +157,14 @@ export async function sendMorningSummaryEmail(opts: SendMorningSummaryEmailOpts)
       workspaceName: opts.workspaceName,
       summaryText: opts.summaryText,
     });
-    await mailer.sendMail({ from: FROM, to: opts.to, subject, html });
+    // Non-blocking fire-and-forget in background
+    mailer.sendMail({ from: FROM, to: opts.to, subject, html }).catch((err) => {
+      console.error("[email] sendMorningSummaryEmail failed in background:", err);
+    });
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    console.error("[email] sendMorningSummaryEmail failed:", msg);
+    console.error("[email] sendMorningSummaryEmail templates failed:", msg);
     return { ok: false, error: msg };
   }
 }

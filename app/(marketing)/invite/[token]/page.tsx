@@ -8,7 +8,7 @@ import { ACTIVE_WORKSPACE_COOKIE } from "@/lib/auth/session";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { BarChart3, ArrowRight, Shield, CheckCircle, Info } from "lucide-react";
+import { ArrowRight, Shield, CheckCircle, Info } from "lucide-react";
 
 async function acceptAsNewAccount(formData: FormData) {
   "use server";
@@ -200,9 +200,7 @@ export default async function InvitePage({
           <div className="rounded-3xl bg-white/80 backdrop-blur-md px-8 py-10 space-y-6">
             {/* Logo */}
             <div className="flex justify-center">
-              <div className="h-14 w-14 rounded-2xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center shadow-lg shadow-indigo-500/30">
-                <BarChart3 className="h-7 w-7 text-white" />
-              </div>
+              <img src="/chrona-logo.png" alt="Chrona Logo" className="h-14 w-14 object-contain" />
             </div>
 
             <div className="text-center space-y-2">
