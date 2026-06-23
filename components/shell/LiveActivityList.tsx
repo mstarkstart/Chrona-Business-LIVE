@@ -57,6 +57,10 @@ export function LiveActivityList({
   const [showAll, setShowAll] = useState(false);
 
   useEffect(() => {
+    setRows(initial);
+  }, [initial]);
+
+  useEffect(() => {
     const unsubscribe = subscribeActivity(businessId, (change) => {
       setRows((prev) =>
         prev.map((r) =>

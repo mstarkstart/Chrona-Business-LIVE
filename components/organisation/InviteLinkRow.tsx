@@ -46,51 +46,53 @@ export function InviteLinkRow({
   }
 
   return (
-    <div className="rounded-xl border border-slate-200 bg-card p-3.5 text-sm space-y-3 shadow-sm hover:border-slate-300 transition-all">
-      <div className="flex items-center justify-between">
-        <div>
-          <span className="font-semibold text-foreground">{email}</span>
-          <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md ml-2.5">
-            {role.replace("_", " ")}
-          </span>
+    <>
+      <div className="rounded-xl border border-slate-200 bg-card p-3.5 text-sm space-y-3 shadow-sm hover:border-slate-300 transition-all">
+        <div className="flex items-center justify-between">
+          <div>
+            <span className="font-semibold text-foreground">{email}</span>
+            <span className="text-[10px] uppercase font-bold tracking-wider text-indigo-600 bg-indigo-50 border border-indigo-100 px-2 py-0.5 rounded-md ml-2.5">
+              {role.replace("_", " ")}
+            </span>
+          </div>
+          
+          {onCancel && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              disabled={cancelling}
+              className="text-xs font-semibold text-red-600 hover:text-red-500 disabled:opacity-50 flex items-center gap-1 cursor-pointer transition-colors"
+              type="button"
+            >
+              {cancelling ? (
+                <Loader2 className="h-3 w-3 animate-spin" />
+              ) : (
+                <Trash2 className="h-3.5 w-3.5" />
+              )}
+              <span>Cancel Invite</span>
+            </button>
+          )}
         </div>
         
-        {onCancel && (
+        <div className="flex items-center gap-2">
+          <code className="flex-1 truncate rounded bg-muted/65 px-2.5 py-1.5 text-xs text-muted-foreground font-mono">
+            {url()}
+          </code>
           <button
-            onClick={() => setShowDeleteConfirm(true)}
-            disabled={cancelling}
-            className="text-xs font-semibold text-red-600 hover:text-red-500 disabled:opacity-50 flex items-center gap-1 cursor-pointer transition-colors"
+            onClick={copy}
+            className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all active:scale-95 shadow-sm"
             type="button"
           >
-            {cancelling ? (
-              <Loader2 className="h-3 w-3 animate-spin" />
-            ) : (
-              <Trash2 className="h-3.5 w-3.5" />
-            )}
-            <span>Cancel Invite</span>
+            {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
+            <span>{copied ? "Copied" : "Copy link"}</span>
           </button>
-        )}
-      </div>
-      
-      <div className="flex items-center gap-2">
-        <code className="flex-1 truncate rounded bg-muted/65 px-2.5 py-1.5 text-xs text-muted-foreground font-mono">
-          {url()}
-        </code>
-        <button
-          onClick={copy}
-          className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-white hover:bg-slate-50 px-3 py-1.5 text-xs font-medium cursor-pointer transition-all active:scale-95 shadow-sm"
-          type="button"
-        >
-          {copied ? <Check className="h-3.5 w-3.5 text-emerald-500" /> : <Copy className="h-3.5 w-3.5" />}
-          <span>{copied ? "Copied" : "Copy link"}</span>
-        </button>
+        </div>
       </div>
 
       {/* ─── Delete Confirmation Modal ─── */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 animate-fade-in">
           <div 
-            className="absolute inset-0 bg-slate-955/40 backdrop-blur-md transition-opacity duration-300"
+            className="fixed inset-0 bg-slate-950/40 backdrop-blur-md transition-opacity duration-300"
             onClick={() => !cancelling && setShowDeleteConfirm(false)}
           />
           
@@ -131,6 +133,6 @@ export function InviteLinkRow({
           </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
