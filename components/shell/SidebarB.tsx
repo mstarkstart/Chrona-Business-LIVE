@@ -139,8 +139,13 @@ export function SidebarB({
           </div>
         )}
 
-        {/* Spacer at top when collapsed */}
-        <div className="h-4" />
+        <button
+          onClick={toggle}
+          className="h-8 w-8 rounded-[10px] bg-white/50 border border-white/65 text-[#344B63] hover:bg-white/72 hover:text-[#1E2D3D] shadow-[0_1px_5px_rgba(100,140,180,0.10),inset_0_1px_0_rgba(255,255,255,0.85)] flex items-center justify-center active:scale-[0.88] transition-all duration-130 ease-[cubic-bezier(0.34,1.56,0.64,1)] btn-press"
+          title="Expand Sidebar"
+        >
+          <ChevronLeft className="h-4 w-4" />
+        </button>
 
         <div className="w-8 border-t border-[rgba(180,205,225,0.40)]" />
 
@@ -189,6 +194,13 @@ export function SidebarB({
         <div className="p-4 border-b border-[rgba(200,220,235,0.40)]">
           <div className="flex items-center justify-between mb-4">
             <p className="text-[10px] font-medium uppercase tracking-[0.09em] text-[#40566E]">My status</p>
+            <button
+              onClick={toggle}
+              className="h-8 w-8 rounded-[10px] bg-white/50 border border-white/65 text-[#344B63] hover:bg-white/72 hover:text-[#1E2D3D] shadow-[0_1px_5px_rgba(100,140,180,0.10),inset_0_1px_0_rgba(255,255,255,0.85)] flex items-center justify-center active:scale-[0.88] transition-all duration-130 ease-[cubic-bezier(0.34,1.56,0.64,1)] btn-press"
+              title="Collapse Sidebar"
+            >
+              <ChevronRight className="h-4 w-4" />
+            </button>
           </div>
 
           {/* Avatar with glowing status ring */}
@@ -283,19 +295,6 @@ export function SidebarB({
           <LiveActivityList businessId={businessId} initial={initialPresence} />
         </Section>
       </div>
-
-      {/* ─── Floating Toggle Button on Left Edge ─── */}
-      <button
-        onClick={toggle}
-        className="absolute top-1/2 -translate-y-1/2 -left-3.5 z-40 h-7 w-7 rounded-full bg-white border border-slate-200/80 text-slate-500 hover:bg-slate-50 hover:text-slate-800 shadow-[0_2px_6px_rgba(0,0,0,0.06),0_1px_2px_rgba(0,0,0,0.04)] flex items-center justify-center active:scale-90 hover:scale-105 transition-all duration-200 cursor-pointer"
-        title={collapsed ? "Expand Sidebar" : "Collapse Sidebar"}
-      >
-        {collapsed ? (
-          <ChevronLeft className="h-4 w-4" />
-        ) : (
-          <ChevronRight className="h-4 w-4" />
-        )}
-      </button>
     </aside>
   );
 }
