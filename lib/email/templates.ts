@@ -25,12 +25,22 @@ const HEADER_STYLE = `
 `.trim();
 
 const LOGO_STYLE = `
-  color: #ffffff;
+  color: #111827;
   font-size: 22px;
-  font-weight: 700;
+  font-weight: 800;
   letter-spacing: -0.5px;
   margin: 0;
 `.trim();
+
+function emailHeader(title = "Chrona"): string {
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL ?? "http://localhost:3000";
+  return `
+    <div style="background:#ffffff;padding:28px 40px;border-bottom:1px solid #f3f4f6;text-align:center;">
+      <img src="${appUrl}/chrona-logo.png" alt="Chrona Logo" style="height:36px;width:36px;display:inline-block;vertical-align:middle;margin-right:8px;" />
+      <span style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;font-size:20px;font-weight:800;color:#111827;letter-spacing:-0.5px;vertical-align:middle;display:inline-block;margin-top:2px;">${title}</span>
+    </div>
+  `.trim();
+}
 
 const BODY_STYLE = `
   padding: 36px 40px 28px;
@@ -99,9 +109,7 @@ export function invitationEmail(opts: InvitationEmailOpts): { subject: string; h
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
 <body style="${BASE_STYLE}">
   <div style="${CARD_STYLE}">
-    <div style="${HEADER_STYLE}">
-      <p style="${LOGO_STYLE}">Chrona</p>
-    </div>
+    ${emailHeader("Chrona")}
     <div style="${BODY_STYLE}">
       <h1 style="${HEADING_STYLE}">You've been invited!</h1>
       <p style="${TEXT_STYLE}">
@@ -152,9 +160,7 @@ export function taskAssignmentEmail(opts: TaskAssignmentEmailOpts): { subject: s
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
 <body style="${BASE_STYLE}">
   <div style="${CARD_STYLE}">
-    <div style="${HEADER_STYLE}">
-      <p style="${LOGO_STYLE}">Chrona</p>
-    </div>
+    ${emailHeader("Chrona")}
     <div style="${BODY_STYLE}">
       <h1 style="${HEADING_STYLE}">You have a new task</h1>
       <p style="font-size:20px;font-weight:600;color:#111827;margin:0 0 12px;">${taskTitle}</p>
@@ -195,9 +201,7 @@ export function taskCompletionEmail(opts: TaskCompletionEmailOpts): { subject: s
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
 <body style="${BASE_STYLE}">
   <div style="${CARD_STYLE}">
-    <div style="${HEADER_STYLE}">
-      <p style="${LOGO_STYLE}">Chrona</p>
-    </div>
+    ${emailHeader("Chrona")}
     <div style="${BODY_STYLE}">
       <p style="font-size:32px;margin:0 0 16px;">🎉</p>
       <h1 style="${HEADING_STYLE}">Great news!</h1>
@@ -267,9 +271,7 @@ export function weeklyDigestEmail(opts: WeeklyDigestEmailOpts): { subject: strin
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
 <body style="${BASE_STYLE}">
   <div style="${CARD_STYLE}">
-    <div style="${HEADER_STYLE}">
-      <p style="${LOGO_STYLE}">Chrona</p>
-    </div>
+    ${emailHeader("Chrona")}
     <div style="${BODY_STYLE}">
       <h1 style="${HEADING_STYLE}">Good Monday, ${userName}!</h1>
       <p style="font-size:14px;color:#6b7280;margin:0 0 28px;">Here's your weekly snapshot for <strong style="color:#374151;">${workspaceName}</strong>.</p>
@@ -339,9 +341,7 @@ export function morningStandupEmail(opts: MorningStandupEmailOpts): { subject: s
 <head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${subject}</title></head>
 <body style="${BASE_STYLE}">
   <div style="${CARD_STYLE}">
-    <div style="${HEADER_STYLE}">
-      <p style="${LOGO_STYLE}">Chrona Nexus</p>
-    </div>
+    ${emailHeader("Chrona Nexus")}
     <div style="${BODY_STYLE}">
       <h1 style="${HEADING_STYLE}">Good Morning, ${userName}!</h1>
       <p style="font-size:14px;color:#6b7280;margin:0 0 24px;">Here is your automated Morning Standup Summary for <strong style="color:#374151;">${workspaceName}</strong>, compiled by Chrona Nexus.</p>
