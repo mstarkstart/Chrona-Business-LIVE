@@ -3,7 +3,7 @@ import { requireUser, requireActiveWorkspace } from "@/lib/auth/session";
 import { can } from "@/lib/auth/permissions";
 import { notFound, redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { Calendar, Clock, Flag, User2, AlignLeft, Sparkles, Pencil, CalendarPlus } from "lucide-react";
+import { Calendar, Clock, Flag, User2, AlignLeft, Sparkles, Pencil, CalendarPlus, CheckCircle2, X } from "lucide-react";
 import type { Tables, TaskPriority, TaskStatus } from "@/lib/supabase/types";
 import { AIDraftDescription, AISuggestDueDate, AISummarizeComments } from "@/components/tasks/AITaskActions";
 import { BackButton } from "@/components/ui/BackButton";
@@ -68,6 +68,67 @@ async function assignTaskOnDetailPage(taskId: string, formData: FormData) {
   revalidatePath(`/tasks/${taskId}`);
 }
 
+async function respondToTaskOnDetailPage(taskId: string, decision: "accept" | "decline") {
+  "use server";
+  const user = await requireUser();
+  const active = await requireActiveWorkspace();
+  const supabase = await createSupabaseServerClient();
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("id, workspace_id, title, created_by, status, assigned_to")
+    .eq("id", taskId)
+    .eq("workspace_id", active.workspace.id)
+    .maybeSingle();
+
+  if (!task || task.assigned_to !== user.id) throw new Error("Not authorised");
+  if (task.status !== "awaiting_acceptance") throw new Error("Invalid task status");
+
+  const supabaseAdminClient = (await import("@/lib/supabase/admin")).supabaseAdmin;
+
+  if (decision === "accept") {
+    await supabaseAdminClient.from("tasks").update({ status: "pending" }).eq("id", taskId);
+
+    await supabaseAdminClient.from("notifications").insert({
+      workspace_id: task.workspace_id,
+      user_id: task.created_by,
+      type: "task_accepted",
+      title: `Task accepted: ${task.title}`,
+      body: null,
+      task_id: taskId,
+    });
+  } else {
+    await supabaseAdminClient
+      .from("tasks")
+      .update({ status: "pending", assigned_to: null })
+      .eq("id", taskId);
+
+    await supabaseAdminClient.from("notifications").insert({
+      workspace_id: task.workspace_id,
+      user_id: task.created_by,
+      type: "task_declined",
+      title: `Task declined: ${task.title}`,
+      body: null,
+      task_id: taskId,
+    });
+  }
+
+  const { syncTaskCalendarEvent } = await import("@/lib/tasks/mutations");
+  await syncTaskCalendarEvent(taskId);
+
+  await supabaseAdminClient
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() })
+    .eq("user_id", user.id)
+    .eq("task_id", taskId)
+    .eq("type", "task_assignment")
+    .is("read_at", null);
+
+  revalidatePath(`/tasks/${taskId}`);
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}
+
 async function updateTaskPriority(taskId: string, formData: FormData) {
   "use server";
   const active = await requireActiveWorkspace();
@@ -87,7 +148,7 @@ async function updateTaskPriority(taskId: string, formData: FormData) {
 
 export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
-  await requireUser();
+  const user = await requireUser();
   const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
 
@@ -121,6 +182,11 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
   const updatePriority = updateTaskPriority.bind(null, id);
   const addToCalendar  = createCalendarEventForTask.bind(null, id, t.title);
   const assignTaskOnDetail = assignTaskOnDetailPage.bind(null, id);
+  const acceptTaskAction = respondToTaskOnDetailPage.bind(null, id, "accept");
+  const declineTaskAction = respondToTaskOnDetailPage.bind(null, id, "decline");
+
+  const isAssignee = t.assigned_to === user.id;
+  const isAwaitingAcceptance = t.status === "awaiting_acceptance";
 
   // Fetch workspace members for assignment dropdown
   const { data: members } = await supabase
@@ -193,6 +259,28 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
         </div>
 
         <div className="px-6 py-6 space-y-6">
+          {/* Accept / Decline Banner */}
+          {isAwaitingAcceptance && isAssignee && (
+            <div className="rounded-xl bg-indigo-50 border border-indigo-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4 shadow-sm animate-fade-in mb-4">
+              <div className="space-y-1">
+                <span className="text-xs font-bold text-indigo-700 block">Task Assignment Request</span>
+                <p className="text-xs text-indigo-600/90 leading-relaxed">This task has been assigned to you. Please accept or decline the assignment.</p>
+              </div>
+              <div className="flex gap-2 shrink-0">
+                <form action={acceptTaskAction}>
+                  <button type="submit" className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer">
+                    <CheckCircle2 className="h-3.5 w-3.5" /> Accept
+                  </button>
+                </form>
+                <form action={declineTaskAction}>
+                  <button type="submit" className="flex items-center gap-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-600 px-4 py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer">
+                    <X className="h-3.5 w-3.5" /> Decline
+                  </button>
+                </form>
+              </div>
+            </div>
+          )}
+
           {/* Description */}
           <div className="flex gap-3 items-start">
             <AlignLeft className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
