@@ -60,6 +60,14 @@ async function createCalendarEventForTask(taskId: string, taskTitle: string, for
   revalidatePath("/calendar");
 }
 
+import { assignTask } from "@/lib/tasks/mutations";
+
+async function assignTaskOnDetailPage(taskId: string, formData: FormData) {
+  "use server";
+  await assignTask(formData);
+  revalidatePath(`/tasks/${taskId}`);
+}
+
 async function updateTaskPriority(taskId: string, formData: FormData) {
   "use server";
   const active = await requireActiveWorkspace();
@@ -108,9 +116,29 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
   const commentBodies = (commentsData ?? []).map((c) => c.body).filter(Boolean) as string[];
   const canPrioritize = can(active.role, "task.prioritize");
+  const canAssign = can(active.role, "task.assign");
 
   const updatePriority = updateTaskPriority.bind(null, id);
   const addToCalendar  = createCalendarEventForTask.bind(null, id, t.title);
+  const assignTaskOnDetail = assignTaskOnDetailPage.bind(null, id);
+
+  // Fetch workspace members for assignment dropdown
+  const { data: members } = await supabase
+    .from("workspace_members")
+    .select("user_id, profiles!workspace_members_user_id_profiles_fkey(first_name, last_name)")
+    .eq("workspace_id", active.workspace.id)
+    .eq("status", "active");
+
+  const nameOf = (uid: string | null | undefined) => {
+    if (!uid) return "Unassigned";
+    const m = members?.find((x) => x.user_id === uid);
+    const p = (m as any)?.profiles;
+    return [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "Teammate";
+  };
+
+  const memberOptions = (members ?? [])
+    .map((m) => ({ id: m.user_id, name: nameOf(m.user_id) }))
+    .sort((a, b) => a.name.localeCompare(b.name));
 
   const todayStr = new Date().toISOString().slice(0, 10);
   const dueDateStr = t.due_date ? new Date(t.due_date).toISOString().slice(0, 10) : todayStr;
@@ -199,20 +227,45 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               </div>
             </div>
 
-            {assigneeName && (
-              <div className="flex gap-2.5 items-start">
-                <User2 className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
-                <div className="space-y-1">
-                  <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Assigned To</div>
-                  <div className="text-sm text-foreground font-semibold flex items-center gap-2">
-                    <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100 text-indigo-650 text-[9px] font-bold">
-                      {assigneeName.slice(0, 2).toUpperCase()}
-                    </span>
-                    {assigneeName}
+            <div className="flex gap-2.5 items-start">
+              <User2 className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
+              <div className="space-y-1 flex-1">
+                <div className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground">Assigned To</div>
+                {canAssign ? (
+                  <form action={assignTaskOnDetail} className="flex items-center gap-2 mt-1">
+                    <input type="hidden" name="id" value={id} />
+                    <select
+                      name="assigned_to"
+                      defaultValue={t.assigned_to ?? ""}
+                      className="text-xs rounded-lg border border-border bg-card px-3 py-1.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50 font-semibold text-foreground"
+                    >
+                      <option value="">Unassigned</option>
+                      {memberOptions.map((m) => (
+                        <option key={m.id} value={m.id}>
+                          {m.name}
+                        </option>
+                      ))}
+                    </select>
+                    <button type="submit" className="text-xs font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors shadow-sm active:scale-[0.97]">
+                      Save
+                    </button>
+                  </form>
+                ) : (
+                  <div className="text-sm text-foreground font-semibold flex items-center gap-2 mt-1">
+                    {assigneeName ? (
+                      <>
+                        <span className="flex h-5 w-5 items-center justify-center rounded-full bg-indigo-50 border border-indigo-100 text-indigo-650 text-[9px] font-bold">
+                          {assigneeName.slice(0, 2).toUpperCase()}
+                        </span>
+                        {assigneeName}
+                      </>
+                    ) : (
+                      <span className="text-muted-foreground italic">Unassigned</span>
+                    )}
                   </div>
-                </div>
+                )}
               </div>
-            )}
+            </div>
 
             <div className="flex gap-2.5 items-start">
               <Calendar className="h-4.5 w-4.5 text-muted-foreground shrink-0 mt-0.5" />
