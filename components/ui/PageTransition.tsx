@@ -9,7 +9,7 @@ export function PageTransition({ children }: { children: React.ReactNode }) {
     <div
       key={pathname}
       className="w-full flex flex-col flex-1"
-      style={{ animation: 'page-enter 350ms cubic-bezier(0.22,1,0.36,1) both' }}
+      style={{ animation: 'page-enter-fade 300ms ease both' }}
     >
       {children}
     </div>
