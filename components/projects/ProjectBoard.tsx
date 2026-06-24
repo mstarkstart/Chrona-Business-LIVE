@@ -2,18 +2,18 @@
 
 import {
   DndContext,
-  closestCorners,
+  closestCenter,
   PointerSensor,
-
   TouchSensor,
   useSensor,
   useSensors,
   DragEndEvent,
+  DragOverEvent,
   DragOverlay,
   DragStartEvent,
   useDroppable,
 } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
+
 import {
   SortableContext,
   verticalListSortingStrategy,
@@ -246,8 +246,9 @@ function SortableTaskCard({
   });
 
   const style = {
-    transform: CSS.Transform.toString(transform),
-    transition: transition ?? "transform 150ms ease",
+    transform: CSS.Translate.toString(transform),
+    transition: isDragging ? undefined : (transition ?? "transform 200ms cubic-bezier(0.2,0,0,1)"),
+    opacity: isDragging ? 0 : 1,
   };
 
   return (
@@ -409,8 +410,8 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
   useEffect(() => { setTasks(initialTasks); }, [initialTasks]);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
-    useSensor(TouchSensor, { activationConstraint: { delay: 200, tolerance: 8 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
+    useSensor(TouchSensor, { activationConstraint: { delay: 250, tolerance: 5 } })
   );
 
   function tasksForStatus(status: Task["status"]) {
@@ -424,14 +425,14 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
     setActiveTask(task ?? null);
   }
 
-  function handleDragEnd(event: DragEndEvent) {
-    setActiveTask(null);
+  function handleDragOver(event: DragOverEvent) {
     const { active, over } = event;
-    if (!over) return;
+    if (!over || active.id === over.id) return;
 
     const draggedTask = tasks.find((t) => t.id === active.id);
     if (!draggedTask) return;
 
+    // Resolve target status from column droppable or sibling card
     let targetStatus: Task["status"] | undefined;
     const colMatch = COLUMNS.find((c) => c.id === over.id || c.status === over.id);
     if (colMatch) {
@@ -440,20 +441,42 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
       const overTask = tasks.find((t) => t.id === over.id);
       targetStatus = overTask?.status;
     }
-    if (!targetStatus) return;
+    if (!targetStatus || targetStatus === draggedTask.status) return;
 
+    // Move the dragged task into the new column optimistically
+    setTasks((prev) => {
+      const without = prev.filter((t) => t.id !== draggedTask.id);
+      const overIndex = without.findIndex((t) => t.id === over.id);
+      const insertAt = overIndex >= 0 ? overIndex : without.filter((t) => t.status === targetStatus).length;
+      const updated = { ...draggedTask, status: targetStatus as Task["status"] };
+      const result = [...without];
+      result.splice(insertAt, 0, updated);
+      return result;
+    });
+  }
+
+  function handleDragEnd(event: DragEndEvent) {
+    setActiveTask(null);
+    const { active, over } = event;
+    if (!over) return;
+
+    const draggedTask = tasks.find((t) => t.id === active.id);
+    if (!draggedTask) return;
+
+    // At drop time, use the current (already-moved) status from state
+    const targetStatus = draggedTask.status;
     const targetTasks = tasks.filter((t) => t.status === targetStatus && t.id !== active.id);
     const overIndex = targetTasks.findIndex((t) => t.id === over.id);
     const newPosition = overIndex >= 0 ? overIndex : targetTasks.length;
 
     setTasks((prev) =>
       prev.map((t) =>
-        t.id === draggedTask.id ? { ...t, status: targetStatus as Task["status"], position: newPosition } : t
+        t.id === draggedTask.id ? { ...t, position: newPosition } : t
       )
     );
 
     startTransition(async () => {
-      await moveTask(draggedTask.id, targetStatus!, newPosition);
+      await moveTask(draggedTask.id, targetStatus, newPosition);
     });
   }
 
@@ -465,8 +488,9 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCorners}
+        collisionDetection={closestCenter}
         onDragStart={handleDragStart}
+        onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
       >
         {/* Fullscreen Board Grid without horizontal scrollbar */}
@@ -490,12 +514,11 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
         </div>
 
         <DragOverlay
-          modifiers={[restrictToWindowEdges]}
-          dropAnimation={{ duration: 180, easing: "cubic-bezier(0.16,1,0.3,1)" }}
+          dropAnimation={null}
         >
           {activeTask ? (
-            <div style={{ cursor: "grabbing" }}>
-              <TaskCard task={activeTask} />
+            <div style={{ cursor: "grabbing", width: "100%", pointerEvents: "none" }}>
+              <TaskCard task={activeTask} isDragging />
             </div>
           ) : null}
         </DragOverlay>
