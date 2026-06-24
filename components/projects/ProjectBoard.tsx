@@ -13,6 +13,7 @@ import {
   DragStartEvent,
   useDroppable,
 } from "@dnd-kit/core";
+import { restrictToWindowEdges } from "@dnd-kit/modifiers";
 
 import {
   SortableContext,
@@ -246,9 +247,8 @@ function SortableTaskCard({
   });
 
   const style = {
-    transform: CSS.Translate.toString(transform),
-    transition: isDragging ? undefined : (transition ?? "transform 200ms cubic-bezier(0.2,0,0,1)"),
-    opacity: isDragging ? 0 : 1,
+    transform: CSS.Transform.toString(transform),
+    transition: transition ?? "transform 150ms ease",
   };
 
   return (
@@ -407,7 +407,9 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
   const [selectedTask, setSelectedTask] = useState<Task | null>(null);
   const [, startTransition] = useTransition();
 
-  useEffect(() => { setTasks(initialTasks); }, [initialTasks]);
+  useEffect(() => { 
+    setTasks([...initialTasks].sort((a, b) => (a.position ?? 0) - (b.position ?? 0))); 
+  }, [initialTasks]);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 4 } }),
@@ -415,9 +417,7 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
   );
 
   function tasksForStatus(status: Task["status"]) {
-    return tasks
-      .filter((t) => t.status === status)
-      .sort((a, b) => (a.position ?? 0) - (b.position ?? 0));
+    return tasks.filter((t) => t.status === status);
   }
 
   function handleDragStart(event: DragStartEvent) {
@@ -488,7 +488,7 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
     <>
       <DndContext
         sensors={sensors}
-        collisionDetection={closestCenter}
+        collisionDetection={closestCorners}
         onDragStart={handleDragStart}
         onDragOver={handleDragOver}
         onDragEnd={handleDragEnd}
@@ -514,11 +514,12 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
         </div>
 
         <DragOverlay
-          dropAnimation={null}
+          modifiers={[restrictToWindowEdges]}
+          dropAnimation={{ duration: 180, easing: "cubic-bezier(0.16,1,0.3,1)" }}
         >
           {activeTask ? (
-            <div style={{ cursor: "grabbing", width: "100%", pointerEvents: "none" }}>
-              <TaskCard task={activeTask} isDragging />
+            <div style={{ cursor: "grabbing" }}>
+              <TaskCard task={activeTask} isDragging={false} />
             </div>
           ) : null}
         </DragOverlay>

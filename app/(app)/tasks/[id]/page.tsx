@@ -143,17 +143,15 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 <select
                   name="priority"
                   defaultValue={t.priority}
+                  onChange={(e) => e.target.form?.requestSubmit()}
                   className="text-[10px] font-bold rounded-lg border border-border bg-card px-2 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50"
-                  title="Select priority then click pencil to save"
+                  title="Select priority to save"
                 >
                   <option value="low">Low</option>
                   <option value="normal">Normal</option>
                   <option value="high">High</option>
                   <option value="urgent">Urgent</option>
                 </select>
-                <button type="submit" className="text-muted-foreground hover:text-primary transition-colors" title="Save priority">
-                  <Pencil className="h-3 w-3" />
-                </button>
               </form>
             ) : (
               <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase ${PRIORITY_COLOUR[t.priority as TaskPriority]}`}>
@@ -305,18 +303,18 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
         <div className="p-6 space-y-5">
           {/* Header */}
-          <div className="flex items-center gap-2.5">
-            <div className="h-8 w-8 rounded-xl bg-gradient-to-br from-violet-500 to-indigo-600 flex items-center justify-center shadow-md shadow-violet-500/20">
-              <Sparkles className="h-4 w-4 text-white" />
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-gradient-to-br from-indigo-600 to-purple-600 flex items-center justify-center shadow-lg shadow-indigo-500/30 border border-white/20">
+              <Sparkles className="h-5 w-5 text-white drop-shadow-md" />
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="text-sm font-bold text-violet-700 dark:text-violet-300">Chrona Nexus</span>
-                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-violet-500 to-indigo-500 text-white tracking-wide shadow-sm">
+                <span className="text-sm font-extrabold text-slate-900 dark:text-white">Chrona Nexus</span>
+                <span className="text-[9px] font-black px-2 py-0.5 rounded-full bg-gradient-to-r from-indigo-500 to-purple-500 text-white tracking-wide shadow-sm">
                   PRO
                 </span>
               </div>
-              <p className="text-[10px] text-violet-500/80 dark:text-violet-400/60">
+              <p className="text-xs font-semibold text-slate-600 dark:text-slate-300 mt-0.5">
                 AI-powered task intelligence — draft, suggest, and summarise in one click
               </p>
             </div>
