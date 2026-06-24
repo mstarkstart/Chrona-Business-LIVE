@@ -218,7 +218,11 @@ export default async function TasksPage({
         <div className="pt-2">
           {/* Members only see their own tasks on the board; managers/owners see all */}
           <ProjectBoard
-            tasks={active.role === "member" ? allTasks.filter((t) => t.assigned_to === user.id) : allTasks}
+            tasks={
+              active.role === "member" || myWorkMode
+                ? allTasks.filter((t) => t.assigned_to === user.id)
+                : allTasks
+            }
             workspaceId={active.workspace.id}
             currentUserId={user.id}
             role={active.role}
