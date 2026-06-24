@@ -526,3 +526,263 @@ export async function syncTaskCalendarEvent(taskId: string) {
 export async function syncTaskCalendarEventAction(taskId: string) {
   await syncTaskCalendarEvent(taskId);
 }
+
+export async function respondToTaskAction(taskId: string, notificationId: string, decision: "accept" | "decline") {
+  const user = await requireUser();
+  const active = await requireActiveWorkspace();
+  const supabase = await createSupabaseServerClient();
+
+    // Send task assignment email — fire-and-forget (never throws).
+    try {
+      // Fetch the assignee's email and the assigner's display name in parallel.
+      const [assigneeProfile, assignerProfile] = await Promise.all([
+        supabaseAdmin.from("profiles").select("personal_email, first_name, last_name").eq("id", assignTo).maybeSingle(),
+        supabaseAdmin.from("profiles").select("first_name, last_name").eq("id", user.id).maybeSingle(),
+      ]);
+
+      const assigneeEmail = assigneeProfile.data?.personal_email;
+      if (assigneeEmail) {
+        const assignerName =
+          [assignerProfile.data?.first_name, assignerProfile.data?.last_name].filter(Boolean).join(" ") ||
+          "A workspace manager";
+
+        await sendTaskAssignmentEmail({
+          to: assigneeEmail,
+          taskTitle: task.title,
+          taskId: id,
+          assignerName,
+          workspaceName: active.workspace.name,
+          priority: task.priority ?? "normal",
+          dueDate: task.due_date ?? null,
+        });
+      }
+    } catch (e) {
+      console.error("[email] sendTaskAssignmentEmail failed:", e);
+    }
+  }
+
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+}
+
+/**
+ * Update the calling user's activity status.
+ * Must use supabaseAdmin because the DB trigger inserts into activity_log,
+ * which blocks direct client writes via `with check (false)`.
+ */
+export async function updateActivityStatus(formData: FormData) {
+  const active = await requireActiveWorkspace();
+  const status = String(formData.get("status")) as import("@/lib/supabase/types").ActivityStatus;
+  const validStatuses = ["available", "tasking", "meeting", "lunch_break", "personal_time", "training", "offline"];
+  if (!validStatuses.includes(status)) throw new Error("Invalid status");
+
+  const { error } = await supabaseAdmin
+    .from("activity_status")
+    .upsert(
+      { workspace_member_id: active.member.id, status, task_id: null },
+      { onConflict: "workspace_member_id" }
+    );
+
+  if (error) {
+    console.error("updateActivityStatus error:", error);
+    throw new Error(error.message);
+  }
+
+  revalidatePath("/dashboard");
+}
+
+export async function syncTaskCalendarEvent(taskId: string) {
+  const { data: task, error: fetchErr } = await supabaseAdmin
+    .from("tasks")
+    .select("workspace_id, title, assigned_to, start_at, end_at, due_date")
+    .eq("id", taskId)
+    .maybeSingle();
+
+  if (fetchErr || !task) {
+    console.error("syncTaskCalendarEvent: failed to fetch task or task not found", taskId, fetchErr);
+    return;
+  }
+
+  // Get existing events for this task
+  const { data: existingEvents } = await supabaseAdmin
+    .from("calendar_events")
+    .select("id")
+    .eq("task_id", taskId);
+
+  // If the task is not assigned, delete any calendar events linked to it
+  if (!task.assigned_to) {
+    if (existingEvents && existingEvents.length > 0) {
+      await supabaseAdmin
+        .from("calendar_events")
+        .delete()
+        .eq("task_id", taskId);
+      
+      // Broadcast update
+      supabaseAdmin.channel(`calendar:${task.workspace_id}`).send({
+        type: "broadcast",
+        event: "calendar_updated",
+        payload: { action: "delete" }
+      });
+    }
+    return;
+  }
+
+  // Determine start_at and end_at
+  let startAt: string | null = null;
+  let endAt: string | null = null;
+
+  if (task.start_at && task.end_at) {
+    startAt = task.start_at;
+    endAt = task.end_at;
+  } else if (task.start_at) {
+    startAt = task.start_at;
+    const d = new Date(task.start_at);
+    d.setHours(d.getHours() + 1);
+    endAt = d.toISOString();
+  } else if (task.due_date) {
+    endAt = task.due_date;
+    const d = new Date(task.due_date);
+    d.setHours(d.getHours() - 1);
+    startAt = d.toISOString();
+  }
+
+  // If we don't have date/time info, delete the event
+  if (!startAt || !endAt) {
+    if (existingEvents && existingEvents.length > 0) {
+      await supabaseAdmin
+        .from("calendar_events")
+        .delete()
+        .eq("task_id", taskId);
+
+      // Broadcast update
+      supabaseAdmin.channel(`calendar:${task.workspace_id}`).send({
+        type: "broadcast",
+        event: "calendar_updated",
+        payload: { action: "delete" }
+      });
+    }
+    return;
+  }
+
+  // Upsert the event
+  if (existingEvents && existingEvents.length > 0) {
+    // Update the first event
+    await supabaseAdmin
+      .from("calendar_events")
+      .update({
+        owner_id: task.assigned_to,
+        title: task.title,
+        start_at: startAt,
+        end_at: endAt,
+        workspace_id: task.workspace_id,
+      })
+      .eq("id", existingEvents[0].id);
+
+    // Broadcast update
+    supabaseAdmin.channel(`calendar:${task.workspace_id}`).send({
+      type: "broadcast",
+      event: "calendar_updated",
+      payload: { action: "update" }
+    });
+
+    // Delete duplicates if they somehow exist
+    if (existingEvents.length > 1) {
+      const toDelete = existingEvents.slice(1).map(e => e.id);
+      await supabaseAdmin
+        .from("calendar_events")
+        .delete()
+        .in("id", toDelete);
+    }
+  } else {
+    // Insert new
+    await supabaseAdmin
+      .from("calendar_events")
+      .insert({
+        workspace_id: task.workspace_id,
+        owner_id: task.assigned_to,
+        title: task.title,
+        event_type: "task_block",
+        start_at: startAt,
+        end_at: endAt,
+        task_id: taskId,
+        is_team: false,
+      });
+
+    // Broadcast update
+    supabaseAdmin.channel(`calendar:${task.workspace_id}`).send({
+      type: "broadcast",
+      event: "calendar_updated",
+      payload: { action: "insert" }
+    });
+  }
+}
+
+export async function syncTaskCalendarEventAction(taskId: string) {
+  await syncTaskCalendarEvent(taskId);
+}
+
+export async function respondToTaskAction(taskId: string, notificationId: string | null, decision: "accept" | "decline") {
+  const user = await requireUser();
+  const active = await requireActiveWorkspace();
+  const supabase = await createSupabaseServerClient();
+
+  const { data: task } = await supabase
+    .from("tasks")
+    .select("id, workspace_id, title, created_by, status, assigned_to")
+    .eq("id", taskId)
+    .eq("workspace_id", active.workspace.id)
+    .maybeSingle();
+
+  if (!task || task.assigned_to !== user.id) throw new Error("Not authorised");
+  if (task.status !== "awaiting_acceptance") throw new Error("Invalid task status");
+
+  if (decision === "accept") {
+    await supabaseAdmin.from("tasks").update({ status: "pending" }).eq("id", taskId);
+
+    await supabaseAdmin.from("notifications").insert({
+      workspace_id: task.workspace_id,
+      user_id: task.created_by,
+      type: "task_accepted",
+      title: `Task accepted: ${task.title}`,
+      body: null,
+      task_id: taskId,
+    });
+  } else {
+    await supabaseAdmin
+      .from("tasks")
+      .update({ status: "pending", assigned_to: null })
+      .eq("id", taskId);
+
+    await supabaseAdmin.from("notifications").insert({
+      workspace_id: task.workspace_id,
+      user_id: task.created_by,
+      type: "task_declined",
+      title: `Task declined: ${task.title}`,
+      body: null,
+      task_id: taskId,
+    });
+  }
+
+  await syncTaskCalendarEvent(taskId);
+
+  let notifQuery = supabaseAdmin
+    .from("notifications")
+    .update({ read_at: new Date().toISOString() });
+
+  if (notificationId) {
+    notifQuery = notifQuery.eq("id", notificationId);
+  } else {
+    notifQuery = notifQuery
+      .eq("user_id", user.id)
+      .eq("task_id", taskId)
+      .eq("type", "task_assignment")
+      .is("read_at", null);
+  }
+
+  await notifQuery;
+
+  revalidatePath(`/tasks/${taskId}`);
+  revalidatePath("/tasks");
+  revalidatePath("/dashboard");
+  revalidatePath("/inbox");
+}

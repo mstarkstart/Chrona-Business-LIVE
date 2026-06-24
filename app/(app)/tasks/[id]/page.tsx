@@ -7,6 +7,7 @@ import { Calendar, Clock, Flag, User2, AlignLeft, Sparkles, Pencil, CalendarPlus
 import type { Tables, TaskPriority, TaskStatus } from "@/lib/supabase/types";
 import { AIDraftDescription, AISuggestDueDate, AISummarizeComments } from "@/components/tasks/AITaskActions";
 import { BackButton } from "@/components/ui/BackButton";
+import { SubmitButton } from "@/components/ui/submit-button";
 
 const STATUS_COLOUR: Record<TaskStatus, string> = {
   pending:              "bg-slate-50 text-slate-600 border border-border",
@@ -60,7 +61,7 @@ async function createCalendarEventForTask(taskId: string, taskTitle: string, for
   revalidatePath("/calendar");
 }
 
-import { assignTask } from "@/lib/tasks/mutations";
+import { assignTask, respondToTaskAction } from "@/lib/tasks/mutations";
 
 async function assignTaskOnDetailPage(taskId: string, formData: FormData) {
   "use server";
@@ -68,66 +69,6 @@ async function assignTaskOnDetailPage(taskId: string, formData: FormData) {
   revalidatePath(`/tasks/${taskId}`);
 }
 
-async function respondToTaskOnDetailPage(taskId: string, decision: "accept" | "decline") {
-  "use server";
-  const user = await requireUser();
-  const active = await requireActiveWorkspace();
-  const supabase = await createSupabaseServerClient();
-
-  const { data: task } = await supabase
-    .from("tasks")
-    .select("id, workspace_id, title, created_by, status, assigned_to")
-    .eq("id", taskId)
-    .eq("workspace_id", active.workspace.id)
-    .maybeSingle();
-
-  if (!task || task.assigned_to !== user.id) throw new Error("Not authorised");
-  if (task.status !== "awaiting_acceptance") throw new Error("Invalid task status");
-
-  const supabaseAdminClient = (await import("@/lib/supabase/admin")).supabaseAdmin;
-
-  if (decision === "accept") {
-    await supabaseAdminClient.from("tasks").update({ status: "pending" }).eq("id", taskId);
-
-    await supabaseAdminClient.from("notifications").insert({
-      workspace_id: task.workspace_id,
-      user_id: task.created_by,
-      type: "task_accepted",
-      title: `Task accepted: ${task.title}`,
-      body: null,
-      task_id: taskId,
-    });
-  } else {
-    await supabaseAdminClient
-      .from("tasks")
-      .update({ status: "pending", assigned_to: null })
-      .eq("id", taskId);
-
-    await supabaseAdminClient.from("notifications").insert({
-      workspace_id: task.workspace_id,
-      user_id: task.created_by,
-      type: "task_declined",
-      title: `Task declined: ${task.title}`,
-      body: null,
-      task_id: taskId,
-    });
-  }
-
-  const { syncTaskCalendarEvent } = await import("@/lib/tasks/mutations");
-  await syncTaskCalendarEvent(taskId);
-
-  await supabaseAdminClient
-    .from("notifications")
-    .update({ read_at: new Date().toISOString() })
-    .eq("user_id", user.id)
-    .eq("task_id", taskId)
-    .eq("type", "task_assignment")
-    .is("read_at", null);
-
-  revalidatePath(`/tasks/${taskId}`);
-  revalidatePath("/tasks");
-  revalidatePath("/dashboard");
-}
 
 async function updateTaskPriority(taskId: string, formData: FormData) {
   "use server";
@@ -182,8 +123,8 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
   const updatePriority = updateTaskPriority.bind(null, id);
   const addToCalendar  = createCalendarEventForTask.bind(null, id, t.title);
   const assignTaskOnDetail = assignTaskOnDetailPage.bind(null, id);
-  const acceptTaskAction = respondToTaskOnDetailPage.bind(null, id, "accept");
-  const declineTaskAction = respondToTaskOnDetailPage.bind(null, id, "decline");
+  const acceptTaskAction = respondToTaskAction.bind(null, id, null, "accept");
+  const declineTaskAction = respondToTaskAction.bind(null, id, null, "decline");
 
   const isAssignee = t.assigned_to === user.id;
   const isAwaitingAcceptance = t.status === "awaiting_acceptance";
@@ -268,14 +209,14 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
               </div>
               <div className="flex gap-2 shrink-0">
                 <form action={acceptTaskAction}>
-                  <button type="submit" className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold transition-all shadow-sm active:scale-95 cursor-pointer">
+                  <SubmitButton className="flex items-center gap-1.5 rounded-lg bg-emerald-600 hover:bg-emerald-700 text-white px-4 py-2 text-xs font-bold transition-all shadow-sm active:scale-95 border-none h-auto">
                     <CheckCircle2 className="h-3.5 w-3.5" /> Accept
-                  </button>
+                  </SubmitButton>
                 </form>
                 <form action={declineTaskAction}>
-                  <button type="submit" className="flex items-center gap-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-600 px-4 py-2 text-xs font-bold transition-all active:scale-95 cursor-pointer">
+                  <SubmitButton variant="outline" className="flex items-center gap-1.5 rounded-lg border border-red-200 hover:bg-red-50 text-red-600 px-4 py-2 text-xs font-bold transition-all active:scale-95 h-auto">
                     <X className="h-3.5 w-3.5" /> Decline
-                  </button>
+                  </SubmitButton>
                 </form>
               </div>
             </div>
@@ -334,9 +275,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                         </option>
                       ))}
                     </select>
-                    <button type="submit" className="text-xs font-bold bg-primary text-primary-foreground px-3 py-1.5 rounded-lg hover:bg-primary/90 transition-colors shadow-sm active:scale-[0.97]">
+                    <SubmitButton className="h-7 text-[10px] uppercase font-bold bg-primary text-primary-foreground px-3 py-1 rounded-lg hover:bg-primary/90 transition-colors shadow-sm border-none ml-2">
                       Save
-                    </button>
+                    </SubmitButton>
                   </form>
                 ) : (
                   <div className="text-sm text-foreground font-semibold flex items-center gap-2 mt-1">

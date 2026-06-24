@@ -7,10 +7,13 @@ import type { ReactNode } from "react";
 import {
   CheckCheck, Bell, UserCheck, ThumbsUp, ThumbsDown,
   ClipboardCheck, ClipboardX, Inbox, Sparkles,
-  ArrowRight, Folder, User,
+  ArrowRight, Folder, User, CheckCircle2, X
 } from "lucide-react";
+import { SubmitButton } from "@/components/ui/submit-button";
+import { respondToTaskAction } from "@/lib/tasks/mutations";
 
 // ── server actions ─────────────────────────────────────────────────────────
+
 
 async function markAllRead() {
   "use server";
@@ -199,7 +202,7 @@ function NotificationCard({
         </div>
 
         {/* Arrow hint */}
-        {n.task_id && (
+        {n.task_id && type !== "task_assignment" && (
           <ArrowRight className="h-3.5 w-3.5 shrink-0 mt-1 opacity-0 group-hover/card:opacity-50 transition-opacity"
             style={{ color: accent.border }} />
         )}
@@ -207,12 +210,29 @@ function NotificationCard({
     </div>
   );
 
+  const acceptAction = respondToTaskAction.bind(null, n.task_id!, n.id, "accept");
+  const declineAction = respondToTaskAction.bind(null, n.task_id!, n.id, "decline");
+
   return (
     <div className="group relative">
       {n.task_id
         ? <Link href={`/tasks/${n.task_id}`} className="block">{inner}</Link>
         : inner
       }
+      {type === "task_assignment" && n.task_id && isUnread && (
+        <div className="absolute right-6 bottom-4 flex gap-2 z-20">
+          <form action={acceptAction}>
+            <SubmitButton className="h-8 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm border-none">
+              <CheckCircle2 className="h-3.5 w-3.5" /> Accept
+            </SubmitButton>
+          </form>
+          <form action={declineAction}>
+            <SubmitButton variant="outline" className="h-8 px-3 py-1.5 text-xs font-semibold border-red-200 text-red-600 hover:bg-red-50 rounded-lg">
+              <X className="h-3.5 w-3.5" /> Decline
+            </SubmitButton>
+          </form>
+        </div>
+      )}
       {isUnread && (
         <form action={markOneRead} className="absolute right-8 top-3 opacity-0 group-hover:opacity-100 transition-opacity z-20">
           <input type="hidden" name="id" value={n.id} />
