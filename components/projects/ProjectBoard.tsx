@@ -13,12 +13,11 @@ import {
   DragStartEvent,
   useDroppable,
 } from "@dnd-kit/core";
-import { restrictToWindowEdges } from "@dnd-kit/modifiers";
-
 import {
   SortableContext,
   verticalListSortingStrategy,
   useSortable,
+  arrayMove,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
 import { useState, useTransition, useEffect } from "react";
@@ -248,7 +247,7 @@ function SortableTaskCard({
 
   const style = {
     transform: CSS.Transform.toString(transform),
-    transition: transition ?? "transform 150ms ease",
+    transition: transition || undefined,
   };
 
   return (
@@ -441,14 +440,26 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
       const overTask = tasks.find((t) => t.id === over.id);
       targetStatus = overTask?.status;
     }
-    if (!targetStatus || targetStatus === draggedTask.status) return;
+    if (!targetStatus) return;
 
-    // Move the dragged task into the new column optimistically
     setTasks((prev) => {
-      const without = prev.filter((t) => t.id !== draggedTask.id);
-      const overIndex = without.findIndex((t) => t.id === over.id);
-      const insertAt = overIndex >= 0 ? overIndex : without.filter((t) => t.status === targetStatus).length;
-      const updated = { ...draggedTask, status: targetStatus as Task["status"] };
+      const activeIndex = prev.findIndex((t) => t.id === active.id);
+      const overIndex = prev.findIndex((t) => t.id === over.id);
+
+      if (targetStatus === draggedTask.status) {
+        // Same-column reorder
+        if (overIndex === -1) return prev; // over is the column droppable, not a card
+        return arrayMove(prev, activeIndex, overIndex);
+      }
+
+      // Cross-column move: update status and splice into correct position
+      const updated = { ...prev[activeIndex], status: targetStatus as Task["status"] };
+      const without = prev.filter((t) => t.id !== active.id);
+      const overIndexInWithout = without.findIndex((t) => t.id === over.id);
+      const insertAt =
+        overIndexInWithout >= 0
+          ? overIndexInWithout
+          : without.filter((t) => t.status === targetStatus).length;
       const result = [...without];
       result.splice(insertAt, 0, updated);
       return result;
@@ -514,11 +525,10 @@ export function ProjectBoard({ tasks: initialTasks, workspaceId, projectId, curr
         </div>
 
         <DragOverlay
-          modifiers={[restrictToWindowEdges]}
           dropAnimation={{ duration: 180, easing: "cubic-bezier(0.16,1,0.3,1)" }}
         >
           {activeTask ? (
-            <div style={{ cursor: "grabbing" }}>
+            <div style={{ cursor: "grabbing", width: 280 }}>
               <TaskCard task={activeTask} isDragging={false} />
             </div>
           ) : null}
