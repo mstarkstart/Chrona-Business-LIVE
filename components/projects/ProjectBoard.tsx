@@ -2,7 +2,7 @@
 
 import {
   DndContext,
-  closestCenter,
+  closestCorners,
   PointerSensor,
   TouchSensor,
   useSensor,
