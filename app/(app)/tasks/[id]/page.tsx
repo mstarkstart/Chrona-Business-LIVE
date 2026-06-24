@@ -143,7 +143,6 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 <select
                   name="priority"
                   defaultValue={t.priority}
-                  onChange={(e) => e.target.form?.requestSubmit()}
                   className="text-[10px] font-bold rounded-lg border border-border bg-card px-2 py-0.5 cursor-pointer focus:outline-none focus:ring-1 focus:ring-primary/50"
                   title="Select priority to save"
                 >
@@ -152,6 +151,9 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                   <option value="high">High</option>
                   <option value="urgent">Urgent</option>
                 </select>
+                <button type="submit" className="text-[10px] font-bold bg-primary text-primary-foreground px-2 py-0.5 rounded-lg hover:bg-primary/90 transition-colors shadow-sm ml-1">
+                  Save
+                </button>
               </form>
             ) : (
               <span className={`text-[10px] font-bold px-2.5 py-0.5 rounded-full border uppercase ${PRIORITY_COLOUR[t.priority as TaskPriority]}`}>
