@@ -201,7 +201,7 @@ export default async function DashboardPage({
               {onlineCount} online
             </span>
             {(pendingApprovals ?? 0) > 0 && (
-              <Link href="/approvals" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 font-semibold hover:bg-amber-500/20 hover:-translate-y-0.5 transition-all cursor-pointer">
+              <Link href="/tasks" className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-amber-500/10 border border-amber-500/20 text-xs text-amber-500 font-semibold hover:bg-amber-500/20 hover:-translate-y-0.5 transition-all cursor-pointer">
                 <AlertTriangle className="h-3.5 w-3.5 text-amber-500 animate-pulse-soft" />
                 {pendingApprovals} pending approval{(pendingApprovals ?? 0) !== 1 ? "s" : ""}
               </Link>
