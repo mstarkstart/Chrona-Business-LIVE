@@ -107,6 +107,7 @@ type TaskContext = {
   assignedByName: string | null;
   priority: string | null;
   status: string | null;
+  assignedTo: string | null;
 };
 
 // ── notification card ──────────────────────────────────────────────────────
@@ -170,6 +171,32 @@ function NotificationCard({
                 {priority.label}
               </span>
             )}
+            {type === "task_assignment" && (
+              <>
+                <span className="text-[10px] text-slate-400">·</span>
+                {taskCtx ? (
+                  taskCtx.assignedTo === n.user_id ? (
+                    taskCtx.status === "awaiting_acceptance" ? (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-indigo-50 border border-indigo-200 text-indigo-600">
+                        Awaiting Decision
+                      </span>
+                    ) : (
+                      <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-emerald-50 border border-emerald-200 text-emerald-600">
+                        Accepted
+                      </span>
+                    )
+                  ) : (
+                    <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600">
+                      Declined
+                    </span>
+                  )
+                ) : (
+                  <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-lg bg-rose-50 border border-rose-200 text-rose-600">
+                    Declined
+                  </span>
+                )}
+              </>
+            )}
           </div>
 
           {/* Title */}
@@ -220,7 +247,7 @@ function NotificationCard({
         ? <Link href={`/tasks/${n.task_id}`} className="block">{inner}</Link>
         : inner
       }
-      {type === "task_assignment" && n.task_id && taskCtx?.status === "awaiting_acceptance" && (
+      {type === "task_assignment" && n.task_id && taskCtx?.status === "awaiting_acceptance" && taskCtx?.assignedTo === n.user_id && (
         <div className="absolute right-6 bottom-4 flex gap-2 z-20">
           <form action={acceptAction}>
             <SubmitButton className="h-8 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm border-none">
@@ -295,6 +322,7 @@ export default async function InboxPage({
           : null,
         priority: task.priority ?? null,
         status: task.status ?? null,
+        assignedTo: task.assigned_to ?? null,
       };
     }
   }
