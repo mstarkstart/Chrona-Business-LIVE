@@ -11,7 +11,7 @@ type Message = {
   sender: "user" | "ai";
   text: string;
   timestamp: string;
-  action?: { type: "task_created" | "doc_created"; title: string } | null;
+  actions?: Array<{ type: "task_created" | "doc_created" | "calendar_event_created"; title: string; detail?: string }> | null;
 };
 
 type ActionChip = {
@@ -81,6 +81,7 @@ function renderMarkdown(text: string) {
   // Hide streaming action blocks so the user never sees them typing out
   html = html.replace(/\[CREATE_TASK_ACTION\][\s\S]*/g, "");
   html = html.replace(/\[CREATE_DOC_ACTION\][\s\S]*/g, "");
+  html = html.replace(/\[CREATE_CALENDAR_EVENT_ACTION\][\s\S]*/g, "");
 
   // Escaping HTML entities to prevent XSS in dangerouslySetInnerHTML
   html = html
@@ -108,30 +109,46 @@ function renderMarkdown(text: string) {
 // Parse action payload blocks from full AI response text
 function parseAndStripActions(text: string): {
   cleanText: string;
-  createTask: { title: string; description?: string; priority?: string; due_date?: string | null } | null;
-  createDoc: { title: string; content: string } | null;
+  createTasks: Array<{ title: string; description?: string; priority?: string; due_date?: string | null; assignee_name?: string | null }>;
+  createDocs: Array<{ title: string; content: string }>;
+  createCalendarEvents: Array<{ title: string; date: string; start_time?: string; end_time?: string; event_type?: string; is_team?: boolean; description?: string | null }>;
 } {
   let cleanText = text;
-  let createTask = null;
-  let createDoc = null;
+  const createTasks: any[] = [];
+  const createDocs: any[] = [];
+  const createCalendarEvents: any[] = [];
 
-  const taskMatch = text.match(/\[CREATE_TASK_ACTION\]\s*([\s\S]*?)\s*\[\/CREATE_TASK_ACTION\]/);
-  if (taskMatch) {
+  // Match all tasks
+  const taskRegex = /\[CREATE_TASK_ACTION\]\s*([\s\S]*?)\s*\[\/CREATE_TASK_ACTION\]/g;
+  let taskMatch;
+  while ((taskMatch = taskRegex.exec(text)) !== null) {
     try {
-      createTask = JSON.parse(taskMatch[1]);
+      createTasks.push(JSON.parse(taskMatch[1]));
     } catch { /* ignore */ }
-    cleanText = cleanText.replace(taskMatch[0], "").trim();
   }
+  cleanText = cleanText.replace(taskRegex, "").trim();
 
-  const docMatch = text.match(/\[CREATE_DOC_ACTION\]\s*([\s\S]*?)\s*\[\/CREATE_DOC_ACTION\]/);
-  if (docMatch) {
+  // Match all docs
+  const docRegex = /\[CREATE_DOC_ACTION\]\s*([\s\S]*?)\s*\[\/CREATE_DOC_ACTION\]/g;
+  let docMatch;
+  while ((docMatch = docRegex.exec(text)) !== null) {
     try {
-      createDoc = JSON.parse(docMatch[1]);
+      createDocs.push(JSON.parse(docMatch[1]));
     } catch { /* ignore */ }
-    cleanText = cleanText.replace(docMatch[0], "").trim();
   }
+  cleanText = cleanText.replace(docRegex, "").trim();
 
-  return { cleanText, createTask, createDoc };
+  // Match all calendar events
+  const calRegex = /\[CREATE_CALENDAR_EVENT_ACTION\]\s*([\s\S]*?)\s*\[\/CREATE_CALENDAR_EVENT_ACTION\]/g;
+  let calMatch;
+  while ((calMatch = calRegex.exec(text)) !== null) {
+    try {
+      createCalendarEvents.push(JSON.parse(calMatch[1]));
+    } catch { /* ignore */ }
+  }
+  cleanText = cleanText.replace(calRegex, "").trim();
+
+  return { cleanText, createTasks, createDocs, createCalendarEvents };
 }
 
 export function AIChatDrawer({
@@ -147,7 +164,7 @@ export function AIChatDrawer({
     {
       id: "welcome",
       sender: "ai",
-      text: "Hello! I'm **Chrona Nexus** ✨ — your workspace intelligence assistant.\n\nI can:\n• **Answer questions** about your tasks, team, and workspace\n• **Analyse workload** and surface blockers across the team\n• **Summarise activity** — daily standup, overdue tasks, who's available\n• **Draft task descriptions** and suggest next steps\n\n⚠️ I'm a read-only assistant — I can **view and analyse** your workspace data but cannot create tasks, assign people, send messages, or modify calendar events. Use the app directly for those actions.\n\nTap a chip below or ask me anything!",
+      text: "Hello! I'm **Chrona Nexus** ✨ — your fully agentic workspace AI.\n\nI can:\n• 📋 **Create tasks** — *'Create a task: Fix login bug, due Friday, high priority'*\n• 📅 **Create calendar events** — *'Schedule a team meeting tomorrow at 2pm for 1 hour'*\n• 🔍 **Check your calendar** — *'What's on my calendar this week?'*\n• 📊 **Analyse workload** — who's overloaded, who's free, what's blocked\n• 📝 **Daily standup** — summarise team activity and priorities\n• ✍️ **Draft task descriptions** — just give me a title\n\nTap a chip below or just type anything!",
       timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     },
   ]);
@@ -257,44 +274,67 @@ export function AIChatDrawer({
       }
 
       // After stream ends, parse action payloads and execute them
-      const { cleanText, createTask, createDoc } = parseAndStripActions(fullText);
-      let actionResult: Message["action"] = null;
+      const { cleanText, createTasks, createDocs, createCalendarEvents } = parseAndStripActions(fullText);
+      const actionResults: Array<{ type: "task_created" | "doc_created" | "calendar_event_created"; title: string; detail?: string }> = [];
 
-      if (createTask) {
+      const taskPromises = createTasks.map(async (task) => {
         try {
           const res = await fetch("/api/ai/create-task", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(createTask),
+            body: JSON.stringify(task),
           });
           if (res.ok) {
-            actionResult = { type: "task_created", title: createTask.title };
+            actionResults.push({ type: "task_created", title: task.title });
           }
-        } catch { /* fire and forget */ }
-      }
+        } catch (err) {
+          console.error("Failed to create task via AI:", err);
+        }
+      });
 
-      if (createDoc) {
-        // Save to localStorage (docs page uses localStorage)
+      const calPromises = createCalendarEvents.map(async (event) => {
+        try {
+          const res = await fetch("/api/ai/create-calendar-event", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(event),
+          });
+          if (res.ok) {
+            const detail = event.date
+              ? `${event.date}${event.start_time ? ` at ${event.start_time}` : ""}`
+              : "";
+            actionResults.push({ type: "calendar_event_created", title: event.title, detail });
+          }
+        } catch (err) {
+          console.error("Failed to create event via AI:", err);
+        }
+      });
+
+      for (const doc of createDocs) {
         try {
           const LS_KEY = "chrona:docs:v1";
           const existing = JSON.parse(localStorage.getItem(LS_KEY) ?? "[]");
           const now = Date.now();
           existing.unshift({
             id: crypto.randomUUID(),
-            title: createDoc.title,
-            content: createDoc.content ?? "",
+            title: doc.title,
+            content: doc.content ?? "",
             createdAt: now,
             updatedAt: now,
           });
           localStorage.setItem(LS_KEY, JSON.stringify(existing));
-          actionResult = { type: "doc_created", title: createDoc.title };
-        } catch { /* ignore */ }
+          actionResults.push({ type: "doc_created", title: doc.title });
+        } catch (err) {
+          console.error("Failed to create doc via AI:", err);
+        }
       }
+
+      await Promise.all([...taskPromises, ...calPromises]);
 
       setMessages((prev) =>
         prev.map((msg) =>
           msg.id === aiMsgId
-            ? { ...msg, text: cleanText || fullText, action: actionResult }
+            ? { ...msg, text: cleanText || fullText, actions: actionResults.length > 0 ? actionResults : null }
             : msg
         )
       );
@@ -457,20 +497,23 @@ export function AIChatDrawer({
                         {msg.timestamp}
                       </span>
                       
-                      {/* Action confirmation card */}
-                      {msg.action && (
+                      {/* Action confirmation cards */}
+                      {msg.actions && msg.actions.map((action, idx) => (
                         <motion.div
+                          key={idx}
                           initial={{ opacity: 0, y: 6 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="flex items-center gap-2 rounded-xl bg-[rgba(52,201,138,0.10)] border border-[rgba(52,201,138,0.30)] px-3 py-2 text-xs text-emerald-700 mt-1"
                         >
-                          {msg.action.type === "task_created" ? (
-                            <><PlusCircle className="h-3.5 w-3.5 shrink-0" /> Task created: <strong>{msg.action.title}</strong></>
+                          {action.type === "task_created" ? (
+                            <><PlusCircle className="h-3.5 w-3.5 shrink-0" /> <span>Task created: <strong>{action.title}</strong> — <a href="/tasks" className="underline underline-offset-2">View tasks</a></span></>
+                          ) : action.type === "calendar_event_created" ? (
+                            <><CheckCircle className="h-3.5 w-3.5 shrink-0" /> <span>📅 Event added: <strong>{action.title}</strong>{action.detail ? ` on ${action.detail}` : ""} — <a href="/calendar" className="underline underline-offset-2">View calendar</a></span></>
                           ) : (
-                            <><CheckCircle className="h-3.5 w-3.5 shrink-0" /> Doc created: <strong>{msg.action.title}</strong></>
+                            <><CheckCircle className="h-3.5 w-3.5 shrink-0" /> Doc created: <strong>{action.title}</strong></>
                           )}
                         </motion.div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 );

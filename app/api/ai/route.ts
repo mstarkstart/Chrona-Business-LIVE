@@ -112,20 +112,9 @@ const BASE_SYSTEM_PROMPTS: Record<Action, string> = {
     "You are a project planner. Suggest a realistic due date given workload context. Return a date in ISO format YYYY-MM-DD only.",
   summarize_comments:
     "You are a summarizer. Summarize these task comments in 2-3 sentences, focusing on decisions and blockers.",
-  general_chat: `You are Chrona Nexus, a read-only workspace intelligence assistant embedded inside the Chrona Business platform.
-You are an expert on every feature of Chrona. You help users navigate the platform, analyse team workload, surface blockers, draft task descriptions, and answer any questions.
-Be concise, insightful, and professional. Use emojis sparingly for warmth. When analysing workspace data (tasks, team presence, activity), synthesise it into actionable insights — don't just list raw data.
-
-━━━ CRITICAL — WHAT YOU CAN AND CANNOT DO (never violate this) ━━━
-You are a READ-ONLY assistant. You can VIEW and ANALYSE data. You CANNOT:
-✗ Create tasks (even if asked — tell the user to use the + Create Task button in /tasks)
-✗ Assign tasks to people (tell the user to open the task detail page)
-✗ Delete or modify tasks
-✗ Create or modify calendar events (tell the user to use the Calendar page)
-✗ Send chat messages
-✗ Change any settings or data in the system
-If asked to do any of the above, be honest and clear that you cannot do it, and guide the user to the correct place in the app to do it themselves.
-━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+  general_chat: `You are Chrona Nexus ✨, a fully agentic AI assistant embedded inside the Chrona Business platform.
+You are an expert on every feature of Chrona. You help users manage their workspace — you can answer questions, analyse data, create tasks, create calendar events, and take real actions on behalf of the user.
+Be concise, insightful, and professional. Use emojis sparingly for warmth.
 
 ━━━ CRITICAL — AVAILABILITY RULE (never violate this) ━━━
 "available" status = the ONLY status meaning a person is free and can take new tasks or be interrupted.
@@ -136,25 +125,63 @@ Every other status means they are BUSY and must NOT be listed as available:
 • "lunch_break"  → on lunch. BUSY. Not available.
 • "personal_time"→ personal time. BUSY. Not available.
 • "offline"      → offline. Not available.
-When asked who is "available", "free", "online", "active for work", "can take a task", "not busy", or any similar phrasing — look ONLY at the "Currently AVAILABLE" section of the presence data. NEVER include anyone from the "Currently BUSY" section in an availability answer. This rule is absolute.
+When asked who is "available", "free", "online", "can take a task", or any similar phrasing — look ONLY at the "Currently AVAILABLE" section. NEVER include anyone from "Currently BUSY" in an availability answer. This rule is absolute.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-━━━ CRITICAL — HONESTY RULE (never hallucinate) ━━━
+━━━ CRITICAL — HONESTY RULE ━━━
 Only state facts that are explicitly present in the workspace data provided to you.
 • If someone asks about a person not in the workspace — say so honestly.
-• If someone asks about data you don't have (e.g. calendar events, meeting history, completed task history) — say you don't have access to that data.
+• If you don't have specific data requested — say so clearly.
 • Never invent statistics, task details, or names.
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
 
-If the user asks how to use Chrona, how to do something, where to find a feature, or asks about navigation — use the CHRONA_PLATFORM_GUIDE knowledge you have been given to give a clear, step-by-step answer.
+━━━ AGENTIC ACTIONS — YOU CAN EXECUTE THESE ━━━
+
+## ACTION 1: CREATE A TASK
+When the user asks you to create a task (including when they ask to assign it to someone), respond with a confirmation message AND append this block (hidden from user):
+[CREATE_TASK_ACTION]
+{"title":"<task title>","description":"<brief description or null>","priority":"<low|normal|high|urgent>","due_date":"<YYYY-MM-DD or null>","assignee_name":"<teammate name or null>"}
+[/CREATE_TASK_ACTION]
+RULES:
+- Execute IMMEDIATELY — never ask clarifying questions before creating.
+- If no priority specified → use "normal". If no due date → use null.
+- If no description → use null.
+- If no assignee specified → use null. If the user mentions assigning it to someone (e.g. "assign to Aiden" or "Aiden Brookes is doing this"), extract and pass their name as "assignee_name".
+- If the user says "due Friday" → calculate the actual YYYY-MM-DD date from today's date given to you.
+
+## ACTION 2: CREATE A CALENDAR EVENT
+When the user asks you to create, schedule, or block time for an event on the calendar, respond with a confirmation message AND append:
+[CREATE_CALENDAR_EVENT_ACTION]
+{"title":"<event title>","date":"<YYYY-MM-DD>","start_time":"<HH:MM>","end_time":"<HH:MM>","event_type":"<meeting|task_block|break|lunch|training|focus|other>","is_team":<true|false>,"description":"<notes or null>"}
+[/CREATE_CALENDAR_EVENT_ACTION]
+RULES:
+- Execute IMMEDIATELY — never ask clarifying questions before creating.
+- If no date specified → use today's date from the date given to you.
+- If no start time → use "09:00". If no end time → use 1 hour after start.
+- is_team = true only if user says "team event", "for the team", or "visible to everyone".
+- event_type: use "meeting" for meetings, "focus" for deep work, "task_block" for task sessions, "break" for breaks.
+- If user says "book a meeting with Aiden at 2pm tomorrow for 1 hour" → calculate correctly from today's date.
+
+## ACTION 3: CREATE A DOCUMENT
+When the user asks you to create a doc or file, respond AND append:
+[CREATE_DOC_ACTION]
+{"title":"<doc title>","content":"<initial markdown content>"}
+[/CREATE_DOC_ACTION]
+RULES: Execute IMMEDIATELY with logical content. Never ask for more details first.
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+If the user asks how to use Chrona, where to find a feature, or asks about navigation — use the CHRONA_PLATFORM_GUIDE knowledge.
 
 When asked to analyse workload: look at who has the most/fewest tasks, flag anyone overloaded, and give a concise distribution summary.
 When asked about blockers: identify tasks that are in_progress but have no recent update, or tasks awaiting approval that are stalled.
-When asked to suggest a meeting time: check who is "available" in the presence data and suggest a time window that works.
+When asked to suggest a meeting time: check who is "available" in the presence data and suggest a time window.
 When asked for a standup: summarise what's done, what's in progress, and flag any blockers or overdue items.
+When asked about the calendar: use the "Upcoming Calendar Events" data provided below.
 
 ${CHRONA_PLATFORM_GUIDE}`,
 };
+
 
 export async function POST(request: NextRequest) {
   // Auth check
@@ -220,7 +247,9 @@ export async function POST(request: NextRequest) {
       const supabase = await createSupabaseServerClient();
       const active = await getActiveWorkspace();
       if (active) {
-        const [{ data: tasks }, { data: members }, { data: presence }, { data: activity }, { data: currentUserProfile }] = await Promise.all([
+        const fetchStart = new Date().toISOString();
+        const fetchEnd = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString();
+        const [{ data: tasks }, { data: members }, { data: presence }, { data: activity }, { data: currentUserProfile }, { data: calendarEvents }] = await Promise.all([
           supabase
             .from("tasks")
             .select("id, title, status, priority, due_date, assigned_to")
@@ -250,6 +279,14 @@ export async function POST(request: NextRequest) {
             .select("first_name, last_name")
             .eq("id", active.member.user_id)
             .maybeSingle(),
+          supabase
+            .from("calendar_events")
+            .select("title, event_type, start_at, end_at, is_team, description, owner_id")
+            .eq("workspace_id", workspaceId)
+            .gte("start_at", fetchStart)
+            .lte("start_at", fetchEnd)
+            .order("start_at", { ascending: true })
+            .limit(20),
         ]);
 
         // Build userId -> name map for task assignment resolution
@@ -270,7 +307,6 @@ export async function POST(request: NextRequest) {
           const isCurrentUser = t.assigned_to === currentUserId;
           return `- [${t.status}] "${t.title}" | priority: ${t.priority} | due: ${t.due_date ?? "none"} | assigned to: ${assigneeName}${isCurrentUser ? " (YOU)" : ""}`;
         }).join("\n");
-
 
         const memberSummary = (members ?? []).map((m) => {
           const p = (m as unknown as { profiles?: { first_name?: string; last_name?: string } }).profiles;
@@ -306,7 +342,16 @@ export async function POST(request: NextRequest) {
           return `- ${name} was ${taskTitle} starting at ${new Date(a.started_at).toLocaleTimeString()} (${duration})`;
         }).join("\n");
 
-        systemPrompt += `\n\n## Current Workspace: ${active.workspace.name}\n## You are talking to: ${currentUserName} (user ID: ${currentUserId})\n## IMPORTANT: When the user says "my tasks", "tasks assigned to me", or similar — filter the task list to ONLY tasks marked with "(YOU)" below.\n\n### Active Tasks (tasks marked with (YOU) are assigned to the current user speaking to you):\n${taskSummary || "No active tasks."}\n\n### Team Members:\n${memberSummary || "No members found."}\n\n### Live Presence Status:\n${presenceSummary}\n\n### Recent Team Activity:\n${activitySummary || "No recent activity."}`;
+        const calendarSummary = (calendarEvents ?? []).map((e) => {
+          const ownerName = userIdToName.get(e.owner_id) ?? "Unknown";
+          const isYours = e.owner_id === currentUserId;
+          const start = new Date(e.start_at).toLocaleString("en-US", { weekday: "short", month: "short", day: "numeric", hour: "numeric", minute: "2-digit" });
+          const end = new Date(e.end_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+          return `- "${e.title}" | ${e.event_type} | ${start} – ${end} | owner: ${ownerName}${isYours ? " (YOU)" : ""} | team: ${e.is_team ? "yes" : "no"}${e.description ? ` | notes: ${e.description}` : ""}`;
+        }).join("\n");
+
+        systemPrompt += `\n\n## Current Workspace: ${active.workspace.name}\n## You are talking to: ${currentUserName} (user ID: ${currentUserId})\n## IMPORTANT: When the user says "my tasks" or "my calendar" — refer to items marked with (YOU) below.\n\n### Active Tasks (tasks marked with (YOU) are assigned to the current user):\n${taskSummary || "No active tasks."}\n\n### Team Members:\n${memberSummary || "No members found."}\n\n### Live Presence Status:\n${presenceSummary}\n\n### Recent Team Activity:\n${activitySummary || "No recent activity."}\n\n### Upcoming Calendar Events (next 7 days — events marked with (YOU) belong to the current user):\n${calendarSummary || "No upcoming events in the next 7 days."}`;
+
       }
     } catch {
       // Non-fatal — continue without workspace context

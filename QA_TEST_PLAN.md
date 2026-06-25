@@ -970,7 +970,7 @@
 
 | # | Action | Expected Result |
 |---|--------|----------------|
-| 1 | Ask: "Assign this task to Aiden Brookes" | AI responds that it cannot directly assign tasks — it can only create new tasks. Suggests the user go to the task detail page to assign. |
+| 1 | Ask: "Reassign the task called Bug Triage to Aiden Brookes" | AI responds that it cannot modify existing tasks — it can only assign new tasks upon creation. Suggests the user go to the task detail page. |
 | 2 | Ask: "Mark my task as complete" | AI explains it cannot change task status — the user must do this manually via the task list or detail page. |
 | 3 | Ask: "Show me my timesheets" | AI can describe where to find timesheets (/timesheets) but cannot show the actual logged hours. |
 | 4 | Ask: "Delete the task called Bug Triage" | AI cannot delete tasks and must say so clearly. |
@@ -982,7 +982,7 @@
 |---|--------|----------------|
 | 1 | Ask: "What tasks does John Smith have?" (no John Smith in workspace) | AI says "I don't see a John Smith in this workspace" — does NOT fabricate tasks. |
 | 2 | Ask: "Who completed the most tasks last week?" | AI should only reference data it has (completed tasks loaded). It should NOT fabricate statistics it doesn't have. |
-| 3 | Ask: "What meetings do I have today?" | AI says it doesn't have access to calendar event data (only tasks and presence). Does NOT invent meetings. |
+| 3 | Ask: "What meetings do I have today?" (with calendar events set) | AI correctly lists today's events from your calendar. If you have none, it says "No meetings scheduled today" — does NOT invent meetings. |
 | 4 | Ask: "Is Aiden available?" when Aiden is marked as "tasking" | AI correctly says Aiden is BUSY (tasking) — NOT available. Does NOT hallucinate. |
 | 5 | Ask the same question twice | AI gives consistent answers based on the same workspace data. No random fabrication. |
 
@@ -1034,8 +1034,9 @@
 - [ ] Tap "Daily standup" → responds with workspace summary
 - [ ] Tap "Who's available?" → only shows members with status = available
 - [ ] Type "What are my tasks?" → returns ONLY current user's tasks (not all tasks)
-- [ ] Type "Create a task: Smoke test task" → task created, appears in /tasks
-- [ ] AI does NOT hallucinate about non-existent people or fake task data
+- [ ] Type "Create a task: Smoke test task, assign to Aiden Brookes" → task created, assigned to Aiden, Aiden receives real-time notification
+- [ ] Type "What meetings do I have this week?" → returns correct calendar events from database
+- [ ] AI does NOT hallucinate about non-existent people or fake task/calendar data
 
 **Other Core Features**
 - [ ] Create a project → appears in projects list

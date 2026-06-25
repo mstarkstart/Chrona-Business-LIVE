@@ -100,6 +100,7 @@ export interface Database {
         task_id: UUID | null; external_provider: CalendarProvider | null;
         external_id: string | null; created_at: TS;
         is_team: boolean;
+        description: string | null;
       }>;
       notifications: RowDef<{
         id: UUID; workspace_id: UUID; user_id: UUID;
