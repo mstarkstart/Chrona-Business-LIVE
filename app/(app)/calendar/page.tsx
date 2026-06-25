@@ -130,7 +130,7 @@ export default async function CalendarPage({
     .lte("start_at", fetchEnd.toISOString());
 
   if (!teamMode) eventsQuery.eq("owner_id", user.id);
-  else           eventsQuery.or(`owner_id.eq.${user.id},is_team.eq.true`);
+  else           eventsQuery.eq("is_team", true);
 
   const { data: rawEvents } = await eventsQuery;
   const allEvents = (rawEvents ?? []) as any[];

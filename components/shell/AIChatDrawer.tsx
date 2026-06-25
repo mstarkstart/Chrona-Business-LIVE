@@ -147,7 +147,7 @@ export function AIChatDrawer({
     {
       id: "welcome",
       sender: "ai",
-      text: "Hello! I'm **Chrona Nexus** ✨ — your agentic workspace intelligence.\n\nI can:\n• **Answer questions** about your tasks, team, and workspace\n• **Analyse workload** and surface blockers across the team\n• **Create tasks** — just say *'Create a task: Review Q3 report, due Friday'*\n• **Draft descriptions**, suggest next steps, and summarise activity\n\nTap a chip below or ask me anything!",
+      text: "Hello! I'm **Chrona Nexus** ✨ — your workspace intelligence assistant.\n\nI can:\n• **Answer questions** about your tasks, team, and workspace\n• **Analyse workload** and surface blockers across the team\n• **Summarise activity** — daily standup, overdue tasks, who's available\n• **Draft task descriptions** and suggest next steps\n\n⚠️ I'm a read-only assistant — I can **view and analyse** your workspace data but cannot create tasks, assign people, send messages, or modify calendar events. Use the app directly for those actions.\n\nTap a chip below or ask me anything!",
       timestamp: new Date().toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" }),
     },
   ]);
