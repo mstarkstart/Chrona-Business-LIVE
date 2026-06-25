@@ -106,6 +106,7 @@ type TaskContext = {
   projectName: string | null;
   assignedByName: string | null;
   priority: string | null;
+  status: string | null;
 };
 
 // ── notification card ──────────────────────────────────────────────────────
@@ -219,7 +220,7 @@ function NotificationCard({
         ? <Link href={`/tasks/${n.task_id}`} className="block">{inner}</Link>
         : inner
       }
-      {type === "task_assignment" && n.task_id && isUnread && (
+      {type === "task_assignment" && n.task_id && taskCtx?.status === "awaiting_acceptance" && (
         <div className="absolute right-6 bottom-4 flex gap-2 z-20">
           <form action={acceptAction}>
             <SubmitButton className="h-8 px-3 py-1.5 text-xs font-semibold bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg shadow-sm border-none">
@@ -280,7 +281,7 @@ export default async function InboxPage({
   if (taskIds.length > 0) {
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("id, priority, project_id, assigned_by, projects(name), profiles!assigned_by(first_name, last_name)")
+      .select("id, priority, project_id, assigned_by, status, projects(name), profiles!assigned_by(first_name, last_name)")
       .in("id", taskIds);
 
     for (const t of tasks ?? []) {
@@ -293,6 +294,7 @@ export default async function InboxPage({
           ? `${task.profiles.first_name ?? ""} ${task.profiles.last_name ?? ""}`.trim() || null
           : null,
         priority: task.priority ?? null,
+        status: task.status ?? null,
       };
     }
   }
