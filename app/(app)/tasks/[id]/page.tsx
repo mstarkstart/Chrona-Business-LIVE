@@ -71,6 +71,8 @@ async function assignTaskOnDetailPage(taskId: string, formData: FormData) {
   "use server";
   await assignTask(formData);
   revalidatePath(`/tasks/${taskId}`);
+  revalidatePath("/tasks");
+  redirect(`/tasks/${taskId}`);
 }
 
 

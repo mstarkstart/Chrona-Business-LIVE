@@ -315,17 +315,40 @@ export async function assignTask(formData: FormData) {
   if (!task) return;
 
   const updates: Record<string, unknown> = { assigned_to: assignTo };
+  const isChanged = assignTo !== task.assigned_to;
 
-  if (assignTo && !task.assigned_to && task.status === "pending") {
-    // New assignment on an unassigned pending task → require acceptance
-    updates.status = "awaiting_acceptance";
-  } else if (!assignTo && task.status === "awaiting_acceptance") {
-    // Unassigning → revert to pending
-    updates.status = "pending";
+  if (isChanged) {
+    if (assignTo) {
+      if (assignTo !== user.id) {
+        // Assigned to someone else → require acceptance
+        updates.status = "awaiting_acceptance";
+      } else {
+        // Self-assignment → if it was awaiting_acceptance, make it pending
+        if (task.status === "awaiting_acceptance") {
+          updates.status = "pending";
+        }
+      }
+    } else {
+      // Unassigning → if it was awaiting_acceptance or in_progress, revert to pending
+      if (task.status === "awaiting_acceptance" || task.status === "in_progress") {
+        updates.status = "pending";
+      }
+    }
   }
 
   await supabase.from("tasks").update(updates).eq("id", id).eq("workspace_id", active.workspace.id);
   await syncTaskCalendarEvent(id);
+
+  // Clear any unread assignment notifications for the previous assignee
+  if (isChanged && task.assigned_to) {
+    await supabaseAdmin
+      .from("notifications")
+      .update({ read_at: new Date().toISOString() })
+      .eq("task_id", id)
+      .eq("user_id", task.assigned_to)
+      .eq("type", "task_assignment")
+      .is("read_at", null);
+  }
 
   // Notify the newly assigned person
   if (assignTo && updates.status === "awaiting_acceptance") {
