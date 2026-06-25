@@ -308,7 +308,7 @@ export default async function InboxPage({
   if (taskIds.length > 0) {
     const { data: tasks } = await supabase
       .from("tasks")
-      .select("id, priority, project_id, assigned_by, status, projects(name), profiles!assigned_by(first_name, last_name)")
+      .select("id, priority, project_id, created_by, status, assigned_to, projects(name), profiles!tasks_created_by_profiles_fkey(first_name, last_name)")
       .in("id", taskIds);
 
     for (const t of tasks ?? []) {
