@@ -47,7 +47,7 @@ async function createCalendarEventForTask(taskId: string, taskTitle: string, for
 
   if (!date || !startTime || !endTime) return;
 
-  await supabase.from("calendar_events").insert({
+  const { error } = await supabase.from("calendar_events").insert({
     workspace_id: active.workspace.id,
     owner_id:     user.id,
     title,
@@ -58,8 +58,11 @@ async function createCalendarEventForTask(taskId: string, taskTitle: string, for
     is_team:      false,
   });
 
+  if (error) throw new Error("Failed to create calendar event");
+
   revalidatePath(`/tasks/${taskId}`);
   revalidatePath("/calendar");
+  redirect(`/tasks/${taskId}?calendar=1`);
 }
 
 import { assignTask, respondToTaskAction } from "@/lib/tasks/mutations";
@@ -88,8 +91,10 @@ async function updateTaskPriority(taskId: string, formData: FormData) {
   redirect(`/tasks/${taskId}`);
 }
 
-export default async function TaskDetailPage({ params }: { params: Promise<{ id: string }> }) {
+export default async function TaskDetailPage({ params, searchParams }: { params: Promise<{ id: string }>; searchParams: Promise<{ calendar?: string }> }) {
   const { id } = await params;
+  const sp = await searchParams;
+  const calendarAdded = sp.calendar === "1";
   const user = await requireUser();
   const active = await requireActiveWorkspace();
   const supabase = await createSupabaseServerClient();
@@ -155,6 +160,15 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
     <div className="p-8 max-w-3xl mx-auto space-y-6">
       <TasksRealtimeSync workspaceId={active.workspace.id} userId={user.id} />
       <BackButton />
+
+      {calendarAdded && (
+        <div className="flex items-center gap-3 rounded-xl bg-emerald-50 border border-emerald-200 px-4 py-3 text-sm text-emerald-700 font-semibold shadow-sm animate-in fade-in slide-in-from-top-2 duration-300">
+          <span className="text-lg">✅</span>
+          Calendar block added successfully! You can view it in{" "}
+          <a href="/calendar" className="underline underline-offset-2 hover:text-emerald-800">My Calendar</a>.
+        </div>
+      )}
+
 
       <div className="rounded-2xl bg-card border border-border shadow-md overflow-hidden">
         <div className="h-1.5 w-full bg-gradient-to-r from-indigo-500 via-purple-500 to-pink-500 animate-pulse-soft" />
@@ -371,13 +385,12 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
                 />
               </div>
             </div>
-            <button
-              type="submit"
-              className="w-full h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 transition-all active:scale-[0.98]"
+            <SubmitButton
+              className="w-full h-10 rounded-xl bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-md shadow-indigo-600/20 transition-all active:scale-[0.98] border-none"
             >
               <CalendarPlus className="h-4 w-4" />
               Add to Calendar
-            </button>
+            </SubmitButton>
           </form>
         </div>
       </div>

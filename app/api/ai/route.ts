@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
       const supabase = await createSupabaseServerClient();
       const active = await getActiveWorkspace();
       if (active) {
-        const [{ data: tasks }, { data: members }, { data: presence }, { data: activity }] = await Promise.all([
+        const [{ data: tasks }, { data: members }, { data: presence }, { data: activity }, { data: currentUserProfile }] = await Promise.all([
           supabase
             .from("tasks")
             .select("id, title, status, priority, due_date, assigned_to")
@@ -245,11 +245,32 @@ export async function POST(request: NextRequest) {
             .eq("workspace_id", workspaceId)
             .order("started_at", { ascending: false })
             .limit(15),
+          supabase
+            .from("profiles")
+            .select("first_name, last_name")
+            .eq("id", active.member.user_id)
+            .maybeSingle(),
         ]);
 
-        const taskSummary = (tasks ?? []).map((t) =>
-          `- [${t.status}] "${t.title}" | priority: ${t.priority} | due: ${t.due_date ?? "none"}`
-        ).join("\n");
+        // Build userId -> name map for task assignment resolution
+        const userIdToName = new Map<string, string>();
+        for (const m of (members ?? [])) {
+          const p = (m as unknown as { profiles?: { first_name?: string; last_name?: string } }).profiles;
+          const name = [p?.first_name, p?.last_name].filter(Boolean).join(" ") || "Member";
+          userIdToName.set(m.user_id, name);
+        }
+
+        const currentUserName = [currentUserProfile?.first_name, currentUserProfile?.last_name].filter(Boolean).join(" ") || "You";
+        const currentUserId = active.member.user_id;
+
+        const taskSummary = (tasks ?? []).map((t) => {
+          const assigneeName = t.assigned_to
+            ? (userIdToName.get(t.assigned_to) ?? `user:${t.assigned_to.slice(0,8)}`)
+            : "Unassigned";
+          const isCurrentUser = t.assigned_to === currentUserId;
+          return `- [${t.status}] "${t.title}" | priority: ${t.priority} | due: ${t.due_date ?? "none"} | assigned to: ${assigneeName}${isCurrentUser ? " (YOU)" : ""}`;
+        }).join("\n");
+
 
         const memberSummary = (members ?? []).map((m) => {
           const p = (m as unknown as { profiles?: { first_name?: string; last_name?: string } }).profiles;
@@ -285,7 +306,7 @@ export async function POST(request: NextRequest) {
           return `- ${name} was ${taskTitle} starting at ${new Date(a.started_at).toLocaleTimeString()} (${duration})`;
         }).join("\n");
 
-        systemPrompt += `\n\n## Current Workspace: ${active.workspace.name}\n\n### Active Tasks:\n${taskSummary || "No active tasks."}\n\n### Team Members:\n${memberSummary || "No members found."}\n\n### Live Presence Status:\n${presenceSummary}\n\n### Recent Team Activity:\n${activitySummary || "No recent activity."}`;
+        systemPrompt += `\n\n## Current Workspace: ${active.workspace.name}\n## You are talking to: ${currentUserName} (user ID: ${currentUserId})\n## IMPORTANT: When the user says "my tasks", "tasks assigned to me", or similar — filter the task list to ONLY tasks marked with "(YOU)" below.\n\n### Active Tasks (tasks marked with (YOU) are assigned to the current user speaking to you):\n${taskSummary || "No active tasks."}\n\n### Team Members:\n${memberSummary || "No members found."}\n\n### Live Presence Status:\n${presenceSummary}\n\n### Recent Team Activity:\n${activitySummary || "No recent activity."}`;
       }
     } catch {
       // Non-fatal — continue without workspace context

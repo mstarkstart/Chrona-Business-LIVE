@@ -840,7 +840,267 @@
 
 ---
 
+# SECTION 29 — TASK CREATION & NOTIFICATION FLOW (FULL END-TO-END)
+
+> Requires two browser sessions: **User A = Manager/Owner**, **User B = Member (e.g. Aiden Brookes)**. Run these in order.
+
+## 29.1 Create & Assign Task (Manager)
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | As User A (Manager), go to `/tasks` → click **+ Create Task** | Task creation modal opens with Title, Description, Priority, Due Date, Status, Assignee fields. |
+| 2 | Fill in: Title = "Test Notification Task", Priority = High, Due = tomorrow, leave Assignee empty → Submit | Task created and appears in the task list. No notification sent (no assignee). |
+| 3 | Open the newly created task card → navigate to `/tasks/[id]` | Task detail page loads showing status = Pending, Assignee = Unassigned. |
+| 4 | In the **Assigned To** dropdown, select **Aiden Brookes** → click **Save** | ✅ Button shows a loading spinner while saving. After saving: status changes to **Awaiting Acceptance**. Assignee now shows Aiden Brookes. |
+| 5 | Check User B's (Aiden) notification bell **without page refresh** | Bell badge count increases by 1 within ~2 seconds (real-time). |
+| 6 | As User B (Aiden), click the notification bell | Dropdown shows: "You've been assigned: Test Notification Task" — unread (pulsing dot). |
+| 7 | As User B, go to `/inbox` | Assignment notification visible. Type label shows "TASK ASSIGNMENT". Task title, assigner name, and priority badge all correct. |
+| 8 | User A's tasks list view | Task shows status = "AWAITING ACCEPTANCE" badge. No loading required. |
+
+## 29.2 Accept Task Flow (Assignee)
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | As User B, click the notification in the bell → click the task | Navigates to `/tasks/[id]`. Accept and Decline buttons visible at the top. |
+| 2 | Click **Accept** on the task detail page | ✅ Button shows loading spinner while processing. After: button disappears. Status badge changes to **Pending**. Confirmation visible. |
+| 3 | Check User A's notification bell **without refresh** | Bell increments. New notification: "Task accepted: Test Notification Task". |
+| 4 | As User A, open inbox | "task_accepted" notification visible. Message is clear and links to the task. |
+| 5 | Check the task status in User A's task list | Status is now **Pending** (not Awaiting Acceptance). No refresh needed. |
+| 6 | As User B, check the Inbox | The original "task_assignment" notification is now marked as read (no pulsing dot). |
+
+## 29.3 Accept Task from Inbox (Alternative Path)
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | As User B (Aiden), with an unread assignment notification, go to `/inbox` | Task assignment notification shown with **Accept** and **Decline** buttons inline. |
+| 2 | Click **Accept** directly from the Inbox | ✅ Loading spinner appears on the Accept button. Task updates to Pending. Notification marked as read. |
+| 3 | Check that the Accept/Decline buttons are gone after accepting | Buttons no longer shown — notification is in a "completed" state. |
+
+## 29.4 Decline Task Flow (Assignee)
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | As User A, assign a new task to User B | Task status = Awaiting Acceptance. User B receives assignment notification. |
+| 2 | As User B, open the task and click **Decline** | ✅ Button shows loading spinner. After: task unassigned (assigned_to = null). Status resets to **Pending**. |
+| 3 | Check User A's inbox **without refresh** | New notification: "Task declined: [task title]". Clear message that the task was declined. |
+| 4 | Check the task in User A's task list | Task shows as **Pending** + **Unassigned** — ready to be reassigned. No refresh needed. |
+| 5 | As User A, reassign the task to someone else | New assignment notification sent to the new assignee. Full notification flow restarts. |
+
+## 29.5 Reassignment Flow
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Task currently assigned to Aiden (Awaiting Acceptance) | Visible on task detail page. |
+| 2 | As Manager, change assignee in the dropdown to Priya Shah → Save | ✅ Save button shows loading. Aiden's assignment notification is replaced. Priya receives a new assignment notification. |
+| 3 | Check Priya's notification bell **without refresh** | Priya's bell increments. She sees "You've been assigned: [task]". |
+| 4 | Task list view updates **without refresh** | Task shows Priya as the new assignee within ~1-2 seconds. |
+| 5 | Aiden's inbox | Aiden does NOT see a new notification (he was replaced before accepting). |
+
+## 29.6 Real-Time Task Updates (both users watching simultaneously)
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | User A and User B both have `/tasks` open simultaneously | Both viewing the same task list. |
+| 2 | User A assigns a task to User B | User B's task list updates **within ~2 seconds without refresh** — new task appears in their list. |
+| 3 | User B accepts a task | User A's task list shows status change to Pending without refresh. |
+| 4 | User A changes a task's priority | Both users see the updated priority badge within ~2 seconds. |
+| 5 | Both users on task detail page `/tasks/[id]` | Any assignment or status change appears on BOTH screens without a manual reload. |
+
+---
+
+---
+
+# SECTION 30 — CALENDAR BLOCK (from Task Detail Page)
+
+**URL:** `/tasks/[id]` → "Block time on Calendar" section
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Open any task detail page | "Block time on Calendar" section visible below the task card. Shows: Title field (pre-filled with task name), Date field (pre-filled with task due date), Start Time (defaults to 09:00), End Time (defaults to 10:00). |
+| 2 | Click **Add to Calendar** with all fields filled | ✅ Button immediately shows a loading spinner and disables. Page reloads after saving. |
+| 3 | After redirect | ✅ A green success banner appears at the top: "Calendar block added successfully! You can view it in My Calendar." Banner links to `/calendar`. |
+| 4 | Click the "My Calendar" link in the banner | Navigates to `/calendar`. The new event appears on the correct date and time. |
+| 5 | Click **Add to Calendar** without a date | Button disabled — date field is `required`. Browser validation shows error before submission. |
+| 6 | Click **Add to Calendar** without a time | Browser validation blocks submission. |
+| 7 | Change the title before submitting | Event saved with the custom title (not the default task title). |
+| 8 | Add two calendar blocks to the same task | Both events appear on the calendar independently. No duplication errors. |
+
+---
+
+---
+
+# SECTION 31 — AI CHATBOT (CHRONA NEXUS)
+
+**Access:** Click the ✨ Sparkles icon in the top navigation bar.
+
+## 31.1 Startup & Basic Interaction
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Click the Sparkles ✨ icon | AI drawer slides in from the right. Welcome message shown from Chrona Nexus with quick-tap chips. |
+| 2 | Tap **"Daily standup"** chip | AI immediately responds with a workspace standup: what's done, in progress, and any blockers — no extra prompting needed. |
+| 3 | Tap **"Who's available?"** chip | AI lists only members with status = "available". Members who are tasking, in meetings, or offline are NOT listed as available. |
+| 4 | Tap **"Overdue tasks"** chip | Lists tasks whose due date is in the past. Each task shows title, priority, and who it's assigned to. |
+| 5 | Tap **"Analyse workload"** chip | Shows a distribution of tasks across team members. Flags anyone with 0 tasks (underloaded) or 5+ tasks (overloaded). |
+| 6 | Type: "What is Aiden doing?" | Responds with Aiden Brooks' current activity status (from live presence data). NOT fictional. |
+
+## 31.2 Task Creation via AI
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Type: "Create a task: Update the homepage banner, due next Monday, priority high" | AI confirms task creation AND shows a green "Task Created" card with the task name. |
+| 2 | Check `/tasks` list | New task appears in the workspace task list with correct title, priority, and due date. |
+| 3 | Type: "Create a task: Fix login bug" (no date/priority) | AI creates the task immediately with default priority (normal) and no due date. Does NOT ask clarifying questions. |
+| 4 | Check `/tasks` list | "Fix login bug" task exists with status = Pending. |
+| 5 | Type: "Create 3 tasks for the sprint" | AI should create all 3 tasks and confirm each one. Check `/tasks` to verify all exist. |
+
+## 31.3 "My Tasks" Query (correct user context)
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Log in as Aiden Brookes. Open Chrona Nexus. Type: "What are my tasks?" | AI responds with ONLY tasks assigned to Aiden Brookes — not all workspace tasks. Names match correctly. |
+| 2 | Log in as Mishal Boss. Type: "What are my tasks?" | AI responds with ONLY tasks assigned to Mishal — not Aiden's or anyone else's. |
+| 3 | Type: "Show me all active tasks" | AI shows ALL active workspace tasks (not filtered to current user). Each shows who it's assigned to. |
+| 4 | Type: "Who has the most tasks?" | AI identifies the member with the highest task count based on live data. |
+| 5 | Type: "What is Alden doing?" (slight typo for Aiden) | AI responds: "Did you mean Aiden Brooks?" and corrects it gracefully. |
+
+## 31.4 Known Limitations (AI Must NOT Claim These Work)
+
+> ⚠️ The AI chatbot **cannot** do the following. It must admit this honestly if asked.
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Ask: "Assign this task to Aiden Brookes" | AI responds that it cannot directly assign tasks — it can only create new tasks. Suggests the user go to the task detail page to assign. |
+| 2 | Ask: "Mark my task as complete" | AI explains it cannot change task status — the user must do this manually via the task list or detail page. |
+| 3 | Ask: "Show me my timesheets" | AI can describe where to find timesheets (/timesheets) but cannot show the actual logged hours. |
+| 4 | Ask: "Delete the task called Bug Triage" | AI cannot delete tasks and must say so clearly. |
+| 5 | Ask: "Send a message to Aiden" | AI cannot send chat messages. It will direct the user to `/chat`. |
+
+## 31.5 Hallucination Tests
+
+| # | Action | Expected Result |
+|---|--------|----------------|
+| 1 | Ask: "What tasks does John Smith have?" (no John Smith in workspace) | AI says "I don't see a John Smith in this workspace" — does NOT fabricate tasks. |
+| 2 | Ask: "Who completed the most tasks last week?" | AI should only reference data it has (completed tasks loaded). It should NOT fabricate statistics it doesn't have. |
+| 3 | Ask: "What meetings do I have today?" | AI says it doesn't have access to calendar event data (only tasks and presence). Does NOT invent meetings. |
+| 4 | Ask: "Is Aiden available?" when Aiden is marked as "tasking" | AI correctly says Aiden is BUSY (tasking) — NOT available. Does NOT hallucinate. |
+| 5 | Ask the same question twice | AI gives consistent answers based on the same workspace data. No random fabrication. |
+
+---
+
+---
+
+# SECTION 32 — UPDATED SMOKE TEST CHECKLIST (v2)
+
+> Run this checklist before every release. It takes ~15 minutes.
+
+**Authentication & Navigation**
+- [ ] Sign in → Dashboard loads
+- [ ] Greeting text correct for time of day
+- [ ] Progress ring shows % and animates
+- [ ] Sign out → redirected to `/login`
+- [ ] After sign out, `/dashboard` redirects to `/login`
+
+**Tasks — Core**
+- [ ] Create a task → appears in list without page reload
+- [ ] Assign task to a member → Save button shows loading spinner
+- [ ] Task status changes to "Awaiting Acceptance" after assignment
+- [ ] Assigned member receives notification instantly (bell count increases without refresh)
+- [ ] Assignee can Accept task from Inbox → Accept button shows loading
+- [ ] After Accept → task status changes to Pending in real-time on Manager's view
+- [ ] Assignee can Decline task → Manager notified instantly
+- [ ] After Decline → task shows as Unassigned/Pending in real-time
+
+**Tasks — Detail Page**
+- [ ] Switch to Kanban Board → board loads with all 4 columns
+- [ ] Drag a task card → card follows cursor exactly, no gap or snap
+- [ ] Open task detail → all fields correct (status, priority, assignee, dates)
+- [ ] Change priority → Save button shows spinner → updates immediately
+
+**Calendar Block**
+- [ ] On task detail page, fill in calendar block form → click "Add to Calendar"
+- [ ] Button shows loading spinner during submission
+- [ ] After submission → green success banner appears: "Calendar block added successfully!"
+- [ ] Navigate to `/calendar` → event appears on the correct date
+
+**Notifications**
+- [ ] Inbox loads notifications correctly
+- [ ] Unread notifications have pulsing dot
+- [ ] Mark single notification as read → dot disappears
+- [ ] Mark all as read → all dots gone, counter resets
+
+**AI Chatbot**
+- [ ] Open Chrona Nexus → welcome message appears
+- [ ] Tap "Daily standup" → responds with workspace summary
+- [ ] Tap "Who's available?" → only shows members with status = available
+- [ ] Type "What are my tasks?" → returns ONLY current user's tasks (not all tasks)
+- [ ] Type "Create a task: Smoke test task" → task created, appears in /tasks
+- [ ] AI does NOT hallucinate about non-existent people or fake task data
+
+**Other Core Features**
+- [ ] Create a project → appears in projects list
+- [ ] Open a project → kanban board loads with project tasks
+- [ ] Invite a member → invite appears in Pending Invitations
+- [ ] Calendar loads → can create and see a new event
+- [ ] Chat loads → can send a message → message appears for other users in real-time
+- [ ] Rewards page → leaderboard loads with scores and podium
+- [ ] Docs → create a new doc, type content, verify auto-save
+- [ ] Settings / Profile → can update name and it saves
+
+---
+
+---
+
 # SECTION 28 — BUG REPORT TEMPLATE
+
+When you find a bug, copy and fill in this template exactly:
+
+```
+╔══════════════════════════════════════════╗
+║           BUG REPORT                    ║
+╚══════════════════════════════════════════╝
+
+Section:        [e.g. Section 29 — Task Notification Flow]
+Step #:         [e.g. Step 4]
+Severity:       Critical / High / Medium / Low
+Title:          [One-line summary of the bug]
+
+Environment:
+  Browser:      [Chrome 125 / Safari 17 / Firefox 127]
+  OS:           [Windows 11 / macOS 14 / iOS 17]
+  Screen size:  [1920×1080 / 375×812 (mobile)]
+  Logged in as: [Role — e.g. Manager / Member]
+  User:         [e.g. Mishal Boss / Aiden Brookes]
+
+Steps to Reproduce:
+  1.
+  2.
+  3.
+
+Expected Result:
+  [What should have happened according to the test plan]
+
+Actual Result:
+  [What actually happened — be specific]
+
+Screenshot / Video:
+  [Attach file or paste link]
+
+──────────────────────────────────────────
+
+Severity Guide:
+  Critical  — App crashes, data lost, cannot proceed, broken login/auth
+  High      — Core feature broken, no workaround
+  Medium    — Feature partially broken, workaround exists
+  Low       — Cosmetic issue, typo, minor visual glitch
+```
+
+---
+
+*End of Chrona QA Test Plan — v2.0*
+*Total Sections: 32 | Total Test Cases: 400+*
+*Last Updated: June 2026*
+
 
 When you find a bug, copy and fill in this template exactly:
 
