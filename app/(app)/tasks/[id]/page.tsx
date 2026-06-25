@@ -8,6 +8,7 @@ import type { Tables, TaskPriority, TaskStatus } from "@/lib/supabase/types";
 import { AIDraftDescription, AISuggestDueDate, AISummarizeComments } from "@/components/tasks/AITaskActions";
 import { BackButton } from "@/components/ui/BackButton";
 import { SubmitButton } from "@/components/ui/submit-button";
+import { TasksRealtimeSync } from "@/components/tasks/TasksRealtimeSync";
 
 const STATUS_COLOUR: Record<TaskStatus, string> = {
   pending:              "bg-slate-50 text-slate-600 border border-border",
@@ -152,6 +153,7 @@ export default async function TaskDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <div className="p-8 max-w-3xl mx-auto space-y-6">
+      <TasksRealtimeSync workspaceId={active.workspace.id} userId={user.id} />
       <BackButton />
 
       <div className="rounded-2xl bg-card border border-border shadow-md overflow-hidden">

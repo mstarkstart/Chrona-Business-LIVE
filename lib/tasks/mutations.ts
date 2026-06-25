@@ -368,7 +368,9 @@ export async function assignTask(formData: FormData) {
   }
 
   revalidatePath("/tasks");
+  revalidatePath(`/tasks/${id}`);
   revalidatePath("/dashboard");
+  revalidatePath("/inbox");
 }
 
 /**

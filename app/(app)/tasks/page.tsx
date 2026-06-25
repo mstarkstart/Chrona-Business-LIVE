@@ -13,6 +13,7 @@ import { CreateTaskButton } from "@/components/shell/CreateTaskButton";
 import { ProjectBoard } from "@/components/projects/ProjectBoard";
 import { List, Kanban, Calendar as CalendarIcon, Clock, CheckCircle2, ShieldAlert, Sparkles, Users } from "lucide-react";
 import { TasksAnimated } from "@/components/tasks/TasksAnimated";
+import { TasksRealtimeSync } from "@/components/tasks/TasksRealtimeSync";
 
 function deadlineColor(due?: string | null) {
   if (!due) return "#9ca3af";
@@ -139,6 +140,7 @@ export default async function TasksPage({
 
   return (
     <div className={`p-8 space-y-8 mx-auto ${view === "kanban" ? "w-full max-w-full" : "max-w-6xl"}`}>
+      <TasksRealtimeSync workspaceId={active.workspace.id} userId={user.id} />
       <header className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
         <div>
           <h1 className="text-3xl font-bold font-display tracking-tight text-foreground">Tasks</h1>
